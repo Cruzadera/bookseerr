@@ -2,14 +2,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json ./
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
 RUN npm install --omit=dev
 
-COPY . .
+COPY src ./src
+COPY web ./web
 
 RUN mkdir -p /data
 
-ENV NODE_ENV=production
 EXPOSE 3000
 
 CMD ["node", "src/server.js"]
