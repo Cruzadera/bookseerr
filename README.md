@@ -227,7 +227,7 @@ No frontend framework is required.
 ### Pull image
 
 ```bash
-docker pull ghcr.io/<your-username>/bookseerr:latest
+docker pull ghcr.io/cruzadera/bookseerr:latest
 ```
 
 ### Run container
@@ -240,7 +240,7 @@ docker run -d \
   -v /your/library:/library \
   -v /your/data:/data \
   --name bookseerr \
-  ghcr.io/<your-username>/bookseerr:latest
+  ghcr.io/cruzadera/bookseerr:latest
 ```
 
 ### docker-compose
