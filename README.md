@@ -235,12 +235,10 @@ There is a `docker-compose.example.yml` file in the repository. Review it before
 
 ## Roadmap
 
-Planned features:
-
-- 👥 Multi-user support (per-user shelves in Calibre-Web)
-- 📚 Automatic shelf assignment
-- 🔔 Notifications on completed imports
-- 🎯 Better result selection strategies
+- [ ] Multi-user support
+- [ ] Automatic shelf assignment
+- [ ] Notifications
+- [ ] Improved ranking logic
 
 ## License
 
