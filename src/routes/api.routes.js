@@ -65,7 +65,7 @@ function createApiRouter({
     try {
       const result = await qbittorrentService.addDownload({
         downloadUrl,
-        category: destinationShelf?.qbCategory || category,
+        category,
         savePath: destinationShelf?.qbSavePath || savePath,
       });
 

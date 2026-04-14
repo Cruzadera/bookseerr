@@ -155,17 +155,24 @@ Example `DESTINATION_SHELVES` value:
 
 ```env
 FEATURE_DESTINATION_SHELF=true
-DESTINATION_SHELVES=[{"id":"maria","label":"Maria","qbCategory":"maria","qbSavePath":"/downloads/maria","calibreShelf":"Maria"},{"id":"infantil","label":"Infantil","qbCategory":"infantil","qbSavePath":"/downloads/infantil","calibreShelf":"Infantil"}]
+DESTINATION_SHELVES=[{"id":"maria","label":"Maria","qbSavePath":"/downloads/maria","calibreShelf":"Maria","calibreShelfId":1},{"id":"infantil","label":"Infantil","qbSavePath":"/downloads/infantil","calibreShelf":"Infantil","calibreShelfId":2}]
 ```
 
 When this feature is enabled, the frontend shows an `Estanteria de destino` selector and the chosen option is used to:
 
-* send the download to a specific qBittorrent category
-* save the book into a destination-specific download folder
+* keep the qBittorrent category unchanged
+* optionally save the book into a destination-specific download folder
 * preserve that destination in job tracking
-* attempt shelf selection during Calibre-Web upload when the upload form exposes a matching shelf field
+* preferably use a fixed `calibreShelfId` so shelf assignment in Calibre-Web is deterministic
+* upload the book to Calibre-Web first and then assign it to the configured shelf through the Calibre-Web session
 
 Note: `.env.example` currently reflects your local setup style. Before publishing or sharing the repository, make sure it does not contain real credentials or internal-only addresses.
+
+Recommended notes for `Estanteria de destino`:
+
+* `calibreShelfId` is the most reliable option and is recommended when you already know the shelf ids in Calibre-Web.
+* `qbSavePath` may differ from `DOWNLOADS_DIR` as long as both paths refer to the same mounted folder from the perspective of qBittorrent and `bookseerr`.
+* Shelf assignment happens after the book is imported into Calibre-Web, because the upload form itself does not expose shelf selection in many installations.
 
 ## API
 

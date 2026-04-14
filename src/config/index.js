@@ -20,7 +20,7 @@ const splitExtensions = (value) =>
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
 
-function normalizeDestinationShelf(item, index, downloadsDir) {
+function normalizeDestinationShelf(item, index, downloadsDir, qbDefaultSavePath) {
   const id = `${item?.id || ""}`.trim();
 
   if (!id) {
@@ -31,23 +31,52 @@ function normalizeDestinationShelf(item, index, downloadsDir) {
 
   const label = `${item.label || id}`.trim();
   const calibreShelf = `${item.calibreShelf || label}`.trim();
-  const qbCategory = `${item.qbCategory || id}`.trim();
+  const calibreShelfId =
+    item?.calibreShelfId === undefined || item?.calibreShelfId === null
+      ? null
+      : Number(item.calibreShelfId);
   const qbSavePath = `${item.qbSavePath || path.join(downloadsDir, id)}`.trim();
+  const candidateLocalPaths = new Set([path.join(downloadsDir, id)]);
+
+  if (qbSavePath) {
+    candidateLocalPaths.add(qbSavePath);
+
+    const relativeToQbRoot =
+      qbDefaultSavePath && path.isAbsolute(qbDefaultSavePath)
+        ? path.relative(qbDefaultSavePath, qbSavePath)
+        : "";
+
+    if (
+      relativeToQbRoot &&
+      !relativeToQbRoot.startsWith("..") &&
+      !path.isAbsolute(relativeToQbRoot)
+    ) {
+      candidateLocalPaths.add(path.join(downloadsDir, relativeToQbRoot));
+    }
+
+    const leafFolder = path.basename(qbSavePath);
+
+    if (leafFolder) {
+      candidateLocalPaths.add(path.join(downloadsDir, leafFolder));
+    }
+  }
 
   return {
     id,
     label,
     calibreShelf,
-    qbCategory,
+    calibreShelfId: Number.isFinite(calibreShelfId) ? calibreShelfId : null,
     qbSavePath,
+    watchPaths: [...candidateLocalPaths],
   };
 }
 
 const downloadsDir = process.env.DOWNLOADS_DIR || "/mnt/unionlib/Descargas";
+const qbDefaultSavePath = process.env.QBITTORRENT_SAVE_PATH || "";
 const destinationShelfItems = parseJson(process.env.DESTINATION_SHELVES, []);
 const destinationShelves = Array.isArray(destinationShelfItems)
   ? destinationShelfItems.map((item, index) =>
-      normalizeDestinationShelf(item, index, downloadsDir),
+      normalizeDestinationShelf(item, index, downloadsDir, qbDefaultSavePath),
     )
   : [];
 const destinationShelvesEnabled =
