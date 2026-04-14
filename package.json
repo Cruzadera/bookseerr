@@ -1,0 +1,27 @@
+{
+  "name": "bookseerr",
+  "version": "1.0.0",
+  "description": "Servicio fullstack para buscar, descargar e importar ebooks con Prowlarr, qBittorrent y Calibre-Web.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.9.0",
+    "axios-cookiejar-support": "^6.0.4",
+    "cheerio": "^1.0.0",
+    "chokidar": "^4.0.3",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "form-data": "^4.0.5",
+    "tough-cookie": "^5.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
