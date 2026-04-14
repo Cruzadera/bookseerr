@@ -61,6 +61,10 @@ async function bootstrap() {
     prowlarrService,
     qbittorrentService,
     jobService,
+    destinationShelves: config.destinationShelves,
+    uiConfig: {
+      destinationShelves: config.destinationShelves,
+    },
   });
 
   app.listen(config.app.port, () => {

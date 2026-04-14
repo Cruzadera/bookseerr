@@ -24,6 +24,23 @@ class ImportService {
     this.processing = new Set();
   }
 
+  resolveDestinationShelf(filePath) {
+    if (!this.config.destinationShelves?.enabled) {
+      return null;
+    }
+
+    return (
+      this.config.destinationShelves.options.find((item) => {
+        const relativePath = path.relative(item.qbSavePath, filePath);
+        return (
+          relativePath &&
+          !relativePath.startsWith("..") &&
+          !path.isAbsolute(relativePath)
+        );
+      }) || null
+    );
+  }
+
   async importFile(filePath) {
     if (filePath.includes(".imported")) {
       return { skipped: true, reason: "already-imported-folder" };
@@ -52,18 +69,30 @@ class ImportService {
         return { skipped: true, reason: "already-processed" };
       }
 
+      const destinationShelf = this.resolveDestinationShelf(filePath);
+
       job = await this.jobService.createImportJob({
         filePath,
         fileName: path.basename(filePath),
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        calibreShelf: destinationShelf?.calibreShelf || null,
       });
 
       await this.jobService.updateJob(job.id, { state: "downloading" });
 
-      await this.calibreWebService.uploadBook(filePath);
+      await this.calibreWebService.uploadBook(filePath, {
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        shelfName: destinationShelf?.calibreShelf || null,
+      });
       await this.cleanupFile(filePath);
       await this.jobService.updateJob(job.id, {
         state: "imported",
         filePath,
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        calibreShelf: destinationShelf?.calibreShelf || null,
       });
       await this.stateRepository.markProcessed(fingerprint, {
         filePath,

@@ -78,6 +78,7 @@ class CalibreWebService {
     const fileInput = form.find('input[type="file"]').first();
     const fileFieldName = fileInput.attr("name") || "btn-upload";
     const hiddenFields = {};
+    const shelfField = this.findShelfField(form, $);
 
     form.find('input[type="hidden"]').each((_, input) => {
       const element = $(input);
@@ -93,10 +94,57 @@ class CalibreWebService {
       action,
       fileFieldName,
       hiddenFields,
+      shelfField,
     };
   }
 
-  async uploadBook(filePath) {
+  findShelfField(form, $) {
+    const candidates = [];
+
+    form.find("select").each((_, select) => {
+      const element = $(select);
+      const name = `${element.attr("name") || ""}`.trim();
+
+      if (!name || !/shelf/i.test(name)) {
+        return;
+      }
+
+      const options = element
+        .find("option")
+        .map((__, option) => ({
+          value: `${$(option).attr("value") || ""}`.trim(),
+          label: `${$(option).text() || ""}`.trim(),
+        }))
+        .get()
+        .filter((option) => option.value || option.label);
+
+      candidates.push({
+        name,
+        options,
+      });
+    });
+
+    return candidates[0] || null;
+  }
+
+  resolveShelfOption(shelfField, shelfName) {
+    if (!shelfField || !shelfName) {
+      return null;
+    }
+
+    const normalizedTarget = shelfName.trim().toLowerCase();
+
+    return (
+      shelfField.options.find((option) => {
+        return (
+          option.value.trim().toLowerCase() === normalizedTarget ||
+          option.label.trim().toLowerCase() === normalizedTarget
+        );
+      }) || null
+    );
+  }
+
+  async uploadBook(filePath, metadata = {}) {
     const formDescriptor = await this.discoverUploadForm();
     const form = new FormData();
 
@@ -110,6 +158,15 @@ class CalibreWebService {
       path.basename(filePath),
     );
 
+    const shelfOption = this.resolveShelfOption(
+      formDescriptor.shelfField,
+      metadata.shelfName,
+    );
+
+    if (formDescriptor.shelfField && shelfOption) {
+      form.append(formDescriptor.shelfField.name, shelfOption.value);
+    }
+
     const response = await this.client.post(formDescriptor.action, form, {
       headers: {
         ...form.getHeaders(),
@@ -120,6 +177,10 @@ class CalibreWebService {
 
     this.logger.info("Libro subido a Calibre-Web", {
       filePath,
+      destinationId: metadata.destinationId || null,
+      destinationLabel: metadata.destinationLabel || null,
+      shelfName: metadata.shelfName || null,
+      shelfAssigned: Boolean(shelfOption),
       action: formDescriptor.action,
       field: formDescriptor.fileFieldName,
       status: response.status,

@@ -68,7 +68,7 @@ body {
 
 .search-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem) auto;
   gap: 1rem;
   align-items: end;
 }
@@ -93,9 +93,28 @@ input {
   font: inherit;
 }
 
-input:focus {
+select {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(107, 79, 47, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  font: inherit;
+}
+
+input:focus,
+select:focus {
   outline: 2px solid rgba(162, 75, 42, 0.2);
   border-color: var(--accent);
+}
+
+.field-compact {
+  min-width: 15rem;
+}
+
+.hidden {
+  display: none;
 }
 
 .actions {

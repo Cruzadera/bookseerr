@@ -45,7 +45,7 @@ class QBittorrentService {
     this.logger.info("Sesion iniciada en qBittorrent");
   }
 
-  async addDownload({ downloadUrl, category }) {
+  async addDownload({ downloadUrl, category, savePath }) {
     await this.login();
 
     try {
@@ -83,6 +83,10 @@ class QBittorrentService {
         category: category || this.defaultCategory,
       });
 
+      if (savePath || this.defaultSavePath) {
+        params.set("savepath", savePath || this.defaultSavePath);
+      }
+
       await this.client.post("/api/v2/torrents/add", params.toString(), {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -95,6 +99,7 @@ class QBittorrentService {
         accepted: true,
         type: "magnet",
         category: category || this.defaultCategory,
+        savePath: savePath || this.defaultSavePath || null,
       };
 
     } catch (e) {

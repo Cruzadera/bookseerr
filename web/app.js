@@ -3,6 +3,12 @@ const searchButton = document.getElementById("search-button");
 const requestButton = document.getElementById("request-button");
 const resultsContainer = document.getElementById("results");
 const statusElement = document.getElementById("status");
+const destinationShelfField = document.getElementById("destination-shelf-field");
+const destinationShelfSelect = document.getElementById("destination-shelf");
+
+const uiState = {
+  destinationShelfEnabled: false,
+};
 
 function setStatus(message, isError = false) {
   statusElement.textContent = message;
@@ -26,6 +32,44 @@ async function handleJsonResponse(response) {
   }
 
   return data;
+}
+
+async function loadSettings() {
+  try {
+    const response = await fetch("/api/settings");
+    const data = await handleJsonResponse(response);
+    const destinationShelves = Array.isArray(data.destinationShelves)
+      ? data.destinationShelves
+      : [];
+
+    uiState.destinationShelfEnabled =
+      Boolean(data.features?.destinationShelf) && destinationShelves.length > 0;
+
+    if (!uiState.destinationShelfEnabled) {
+      destinationShelfField.classList.add("hidden");
+      return;
+    }
+
+    destinationShelfSelect.innerHTML = [
+      '<option value="">Biblioteca general</option>',
+      ...destinationShelves.map(
+        (item) =>
+          `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`,
+      ),
+    ].join("");
+
+    destinationShelfField.classList.remove("hidden");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+function getSelectedDestinationShelf() {
+  if (!uiState.destinationShelfEnabled) {
+    return "";
+  }
+
+  return destinationShelfSelect.value || "";
 }
 
 async function search() {
@@ -96,6 +140,7 @@ async function downloadBook(title, downloadUrl, protocol) {
   setStatus(`Starting download for "${title}"...`);
 
   try {
+    const destinationId = getSelectedDestinationShelf();
     const res = await fetch("/api/download", {
       method: "POST",
       headers: {
@@ -105,6 +150,7 @@ async function downloadBook(title, downloadUrl, protocol) {
         title,
         downloadUrl,
         protocol,
+        destinationId,
       }),
     });
 
@@ -126,12 +172,13 @@ async function requestBook() {
   setStatus("Looking for the best match...");
 
   try {
+    const destinationId = getSelectedDestinationShelf();
     const res = await fetch("/api/request", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, destinationId }),
     });
 
     const data = await handleJsonResponse(res);
@@ -142,6 +189,7 @@ async function requestBook() {
   }
 }
 
+loadSettings();
 searchButton.addEventListener("click", search);
 requestButton.addEventListener("click", requestBook);
 searchInput.addEventListener("keydown", (event) => {

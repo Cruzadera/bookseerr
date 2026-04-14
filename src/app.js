@@ -21,6 +21,20 @@ function createApp(services) {
     });
   });
 
+  app.get("/api/settings", (req, res) => {
+    res.json({
+      features: {
+        destinationShelf: services.uiConfig.destinationShelves.enabled,
+      },
+      destinationShelves: services.uiConfig.destinationShelves.options.map(
+        (item) => ({
+          id: item.id,
+          label: item.label,
+        }),
+      ),
+    });
+  });
+
   app.use("/", express.static(path.join(__dirname, "../web")));
 
   app.use(
@@ -29,6 +43,7 @@ function createApp(services) {
       prowlarrService: services.prowlarrService,
       qbittorrentService: services.qbittorrentService,
       jobService: services.jobService,
+      destinationShelves: services.destinationShelves,
     }),
   );
 

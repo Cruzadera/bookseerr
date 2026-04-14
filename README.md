@@ -24,6 +24,7 @@ User flow:
 * Manual download endpoint: `POST /api/download`
 * Automatic request endpoint: `POST /api/request`
 * Job tracking endpoint: `GET /api/jobs`
+* Frontend option for `Estanteria de destino`
 * EPUB-first ranking logic in `ProwlarrService`
 * Automatic import of downloaded ebooks into Calibre-Web
 
@@ -128,6 +129,8 @@ QBITTORRENT_USERNAME=admin
 QBITTORRENT_PASSWORD=your_password
 QBITTORRENT_CATEGORY=books
 QBITTORRENT_SAVE_PATH=/downloads
+FEATURE_DESTINATION_SHELF=false
+DESTINATION_SHELVES=[]
 
 CALIBRE_WEB_BASE_URL=http://calibre-web:8083
 CALIBRE_WEB_USERNAME=admin
@@ -147,6 +150,20 @@ PROCESSED_DIR=/downloads/.imported
 
 REQUEST_TIMEOUT_MS=30000
 ```
+
+Example `DESTINATION_SHELVES` value:
+
+```env
+FEATURE_DESTINATION_SHELF=true
+DESTINATION_SHELVES=[{"id":"maria","label":"Maria","qbCategory":"maria","qbSavePath":"/downloads/maria","calibreShelf":"Maria"},{"id":"infantil","label":"Infantil","qbCategory":"infantil","qbSavePath":"/downloads/infantil","calibreShelf":"Infantil"}]
+```
+
+When this feature is enabled, the frontend shows an `Estanteria de destino` selector and the chosen option is used to:
+
+* send the download to a specific qBittorrent category
+* save the book into a destination-specific download folder
+* preserve that destination in job tracking
+* attempt shelf selection during Calibre-Web upload when the upload form exposes a matching shelf field
 
 Note: `.env.example` currently reflects your local setup style. Before publishing or sharing the repository, make sure it does not contain real credentials or internal-only addresses.
 
@@ -196,6 +213,10 @@ curl -X POST "http://localhost:3000/api/request" \
   }'
 ```
 
+### `GET /api/settings`
+
+Returns frontend feature flags and configured destination shelves.
+
 ### `GET /api/jobs`
 
 Returns tracked download/import jobs.
@@ -207,6 +228,7 @@ The frontend is a simple vanilla JS app served from `web/`.
 It includes:
 
 * search input
+* optional `Estanteria de destino` selector
 * search results list
 * per-result download button
 * `Download best` action using `/api/request`
