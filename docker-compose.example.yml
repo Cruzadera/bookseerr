@@ -1,16 +1,18 @@
 services:
-  bookseerr-backend:
+  bookseerr:
     build: .
-    container_name: bookseerr-backend
+    container_name: bookseerr
     restart: unless-stopped
+    environment:
+      NODE_ENV: production
     env_file:
-      - /opt/home-server/bookseerr-backend/.env.bookseerr
+      - /opt/home-server/bookseerr/.env
     ports:
       - "3000:3000"
     volumes:
       - /mnt/unionlib/Descargas:/mnt/unionlib/Descargas
       - /mnt/unionlib/LIBROS/biblioteca:/mnt/unionlib/LIBROS/biblioteca
-      - /opt/home-server/bookseerr-backend/data:/data
+      - /opt/home-server/bookseerr/data:/data
     networks:
       - homeserver
 
