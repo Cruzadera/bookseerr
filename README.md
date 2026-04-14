@@ -222,9 +222,42 @@ No frontend framework is required.
 5. `ImportService` uploads supported book files to Calibre-Web.
 6. The imported file is moved or deleted depending on `POST_IMPORT_ACTION`.
 
-## Docker note
+## 🐳 Docker
 
-There is a `docker-compose.example.yml` file in the repository. Review it before using it directly, especially paths, service names, and mounted volumes, so they match your actual environment.
+### Pull image
+
+```bash
+docker pull ghcr.io/<your-username>/bookseerr:latest
+```
+
+### Run container
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  --env-file .env \
+  -v /your/downloads:/downloads \
+  -v /your/library:/library \
+  -v /your/data:/data \
+  --name bookseerr \
+  ghcr.io/<your-username>/bookseerr:latest
+```
+
+### docker-compose
+
+The repository includes `docker-compose.example.yml` for a single-service `bookseerr` deployment.
+
+1. Copy it to your deployment directory as `docker-compose.yml`.
+2. Update the placeholder bind mounts so they match your host paths.
+3. Make sure the `build` path points at your local `bookseerr` checkout.
+4. Start the container with `docker compose up -d --build`.
+
+### Notes
+
+* Make sure `/downloads` points to the same shared download directory used by qBittorrent so the watcher can detect completed files.
+* Make sure `/library` points to the library location expected by your Calibre-Web workflow.
+* Mount `/data` to persistent storage so `STATE_FILE=/data/state.json` survives container restarts.
+* If your host uses custom ownership or a NAS share, ensure the container has the correct file permissions and UID/GID mapping when needed.
 
 ## Development notes
 

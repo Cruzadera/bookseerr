@@ -1,6 +1,10 @@
+.git
+.github
 node_modules
 npm-debug.log
+Dockerfile
+docker-compose.example.yml
+README.md
 .env
-.git
-.DS_Store
-data
+.env.*
+!.env.example
