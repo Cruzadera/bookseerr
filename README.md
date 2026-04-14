@@ -8,10 +8,10 @@ GitHub repository: `https://github.com/Cruzadera/bookseerr.git`
 
 `bookseerr` connects the following services into a single automated pipeline:
 
-- `Prowlarr` for book search
-- `qBittorrent` for download handling
-- `Calibre-Web` for library import
-- a local watcher that detects completed book files and uploads them automatically
+* `Prowlarr` for book search
+* `qBittorrent` for download handling
+* `Calibre-Web` for library import
+* a local watcher that detects completed book files and uploads them automatically
 
 User flow:
 
@@ -19,13 +19,36 @@ User flow:
 
 ## Features
 
-- Minimal web UI served directly by Express
-- Search endpoint: `GET /api/search`
-- Manual download endpoint: `POST /api/download`
-- Automatic request endpoint: `POST /api/request`
-- Job tracking endpoint: `GET /api/jobs`
-- EPUB-first ranking logic in `ProwlarrService`
-- Automatic import of downloaded ebooks into Calibre-Web
+* Minimal web UI served directly by Express
+* Search endpoint: `GET /api/search`
+* Manual download endpoint: `POST /api/download`
+* Automatic request endpoint: `POST /api/request`
+* Job tracking endpoint: `GET /api/jobs`
+* EPUB-first ranking logic in `ProwlarrService`
+* Automatic import of downloaded ebooks into Calibre-Web
+
+## ⚠️ qBittorrent Configuration (IMPORTANT)
+
+To allow `bookseerr` to communicate correctly with qBittorrent WebUI API, you must disable some security options.
+
+Go to:
+
+`qBittorrent → Settings → Web UI → Security`
+
+And make sure:
+
+* ❌ **Disable CSRF protection**
+* ❌ **Disable Host header validation**
+
+If these options are enabled:
+
+* API requests may fail with `403 Forbidden`
+* Downloads may appear as accepted but never actually start
+* Authentication may silently fail
+
+These settings are required when running qBittorrent behind Docker or reverse proxies.
+
+---
 
 ## Project structure
 
@@ -49,11 +72,11 @@ bookseerr/
 
 ## Requirements
 
-- `Node.js >= 18`
-- access to `Prowlarr`
-- access to `qBittorrent`
-- access to `Calibre-Web`
-- a shared downloads path visible to both `bookseerr` and the downloader
+* `Node.js >= 18`
+* access to `Prowlarr`
+* access to `qBittorrent`
+* access to `Calibre-Web`
+* a shared downloads path visible to both `bookseerr` and the downloader
 
 ## Quick start
 
@@ -169,8 +192,7 @@ Example:
 curl -X POST "http://localhost:3000/api/request" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "Dune",
-    "user": "maria"
+    "query": "Dune"
   }'
 ```
 
@@ -184,10 +206,10 @@ The frontend is a simple vanilla JS app served from `web/`.
 
 It includes:
 
-- search input
-- search results list
-- per-result download button
-- `Download best` action using `/api/request`
+* search input
+* search results list
+* per-result download button
+* `Download best` action using `/api/request`
 
 No frontend framework is required.
 
@@ -206,10 +228,19 @@ There is a `docker-compose.example.yml` file in the repository. Review it before
 
 ## Development notes
 
-- Existing import logic was kept intact.
-- Existing watcher logic was kept intact.
-- Existing logging and job tracking were preserved.
-- The web UI is intentionally small and framework-free.
+* Existing import logic was kept intact.
+* Existing watcher logic was kept intact.
+* Existing logging and job tracking were preserved.
+* The web UI is intentionally small and framework-free.
+
+## Roadmap
+
+Planned features:
+
+- 👥 Multi-user support (per-user shelves in Calibre-Web)
+- 📚 Automatic shelf assignment
+- 🔔 Notifications on completed imports
+- 🎯 Better result selection strategies
 
 ## License
 
