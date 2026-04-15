@@ -24,6 +24,29 @@ class ImportService {
     this.processing = new Set();
   }
 
+  resolveDestinationShelf(filePath) {
+    if (!this.config.destinationShelves?.enabled) {
+      return null;
+    }
+
+    return (
+      this.config.destinationShelves.options.find((item) => {
+        const candidatePaths = Array.isArray(item.watchPaths)
+          ? item.watchPaths
+          : [item.qbSavePath];
+
+        return candidatePaths.some((candidatePath) => {
+          const relativePath = path.relative(candidatePath, filePath);
+          return (
+            relativePath &&
+            !relativePath.startsWith("..") &&
+            !path.isAbsolute(relativePath)
+          );
+        });
+      }) || null
+    );
+  }
+
   async importFile(filePath) {
     if (filePath.includes(".imported")) {
       return { skipped: true, reason: "already-imported-folder" };
@@ -52,18 +75,39 @@ class ImportService {
         return { skipped: true, reason: "already-processed" };
       }
 
+      const destinationShelf = this.resolveDestinationShelf(filePath);
+
+      this.logger.info("Resolviendo estanteria de destino", {
+        filePath,
+        destinationId: destinationShelf?.id || null,
+        watchPaths: destinationShelf?.watchPaths || [],
+      });
+
       job = await this.jobService.createImportJob({
         filePath,
         fileName: path.basename(filePath),
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        calibreShelf: destinationShelf?.calibreShelf || null,
+        calibreShelfId: destinationShelf?.calibreShelfId || null,
       });
 
       await this.jobService.updateJob(job.id, { state: "downloading" });
 
-      await this.calibreWebService.uploadBook(filePath);
+      await this.calibreWebService.uploadBook(filePath, {
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        shelfName: destinationShelf?.calibreShelf || null,
+        shelfId: destinationShelf?.calibreShelfId || null,
+      });
       await this.cleanupFile(filePath);
       await this.jobService.updateJob(job.id, {
         state: "imported",
         filePath,
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        calibreShelf: destinationShelf?.calibreShelf || null,
+        calibreShelfId: destinationShelf?.calibreShelfId || null,
       });
       await this.stateRepository.markProcessed(fingerprint, {
         filePath,
