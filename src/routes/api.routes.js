@@ -67,6 +67,8 @@ function createApiRouter({
         downloadUrl,
         category,
         savePath: destinationShelf?.qbSavePath || savePath,
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
       });
 
       const updated = await jobService.updateJob(job.id, {

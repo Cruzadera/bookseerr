@@ -173,6 +173,7 @@ Recommended notes for `Estanteria de destino`:
 * `calibreShelfId` is the most reliable option and is recommended when you already know the shelf ids in Calibre-Web.
 * `qbSavePath` may differ from `DOWNLOADS_DIR` as long as both paths refer to the same mounted folder from the perspective of qBittorrent and `bookseerr`.
 * Shelf assignment happens after the book is imported into Calibre-Web, because the upload form itself does not expose shelf selection in many installations.
+* If you use custom `qbSavePath` values such as `/downloads/shelf-1` or `/downloads/shelf-2`, create those folders in the qBittorrent-visible volume in advance and make sure they are writable.
 
 ## API
 
