@@ -1,35 +1,50 @@
-# bookseerr
+# Bookseerr – Ebook Request Manager for Calibre-Web
 
-`bookseerr` is a self-hosted fullstack service for searching, downloading, and auto-importing ebooks with a lightweight web UI.
+> A lightweight alternative to Overseerr for managing ebooks with Calibre-Web.
 
-GitHub repository: `https://github.com/Cruzadera/bookseerr.git`
+Bookseerr is a self-hosted ebook request manager designed to automate ebook search, download, and import into your Calibre-Web library.
 
-## What it does
+It integrates tools like Prowlarr and qBittorrent into a seamless pipeline, allowing users to search and request books from a simple web interface.
 
-`bookseerr` connects the following services into a single automated pipeline:
+---
 
-* `Prowlarr` for book search
-* `qBittorrent` for download handling
-* `Calibre-Web` for library import
-* a local watcher that detects completed book files and uploads them automatically
+## 🔍 Keywords
 
-User flow:
+self-hosted ebook manager, calibre-web automation, ebook request system, overseerr for books, ebook downloader, prowlarr books, qbittorrent ebooks
 
-`Open UI -> search book -> start download -> watcher detects file -> Calibre-Web import`
+---
 
-## Features
+## 🚀 What it does
 
-* Minimal web UI served directly by Express
-* Search endpoint: `GET /api/search`
-* Manual download endpoint: `POST /api/download`
-* Automatic request endpoint: `POST /api/request`
-* Job tracking endpoint: `GET /api/jobs`
-* EPUB-first ranking logic in `ProwlarrService`
-* Automatic import of downloaded ebooks into Calibre-Web
+Bookseerr integrates popular self-hosted services into a fully automated ebook pipeline:
+
+* `Prowlarr` → search engine for books
+* `qBittorrent` → download manager
+* `Calibre-Web` → library management
+* Local watcher → detects completed downloads and imports them automatically
+
+### User flow
+
+`Open UI → search book → start download → watcher detects file → Calibre-Web import`
+
+---
+
+## ✨ Features
+
+* Minimal and fast web UI served by Express
+* Ebook search via `GET /api/search`
+* Manual download via `POST /api/download`
+* One-click request via `POST /api/request`
+* Download tracking via `GET /api/jobs`
+* EPUB-first ranking logic
+* Automatic import into Calibre-Web
+* Fully self-hosted and lightweight
+
+---
 
 ## ⚠️ qBittorrent Configuration (IMPORTANT)
 
-To allow `bookseerr` to communicate correctly with qBittorrent WebUI API, you must disable some security options.
+To allow Bookseerr to communicate correctly with qBittorrent WebUI API, you must disable some security options.
 
 Go to:
 
@@ -37,20 +52,20 @@ Go to:
 
 And make sure:
 
-* ❌ **Disable CSRF protection**
-* ❌ **Disable Host header validation**
+* ❌ Disable CSRF protection
+* ❌ Disable Host header validation
 
 If these options are enabled:
 
 * API requests may fail with `403 Forbidden`
-* Downloads may appear as accepted but never actually start
+* Downloads may appear accepted but never start
 * Authentication may silently fail
 
 These settings are required when running qBittorrent behind Docker or reverse proxies.
 
 ---
 
-## Project structure
+## 📁 Project structure
 
 ```text
 bookseerr/
@@ -70,51 +85,57 @@ bookseerr/
 └── README.md
 ```
 
-## Requirements
+---
 
-* `Node.js >= 18`
-* access to `Prowlarr`
-* access to `qBittorrent`
-* access to `Calibre-Web`
-* a shared downloads path visible to both `bookseerr` and the downloader
+## ⚙️ Requirements
 
-## Quick start
+* Node.js >= 18
+* Access to Prowlarr
+* Access to qBittorrent
+* Access to Calibre-Web
+* Shared downloads directory
 
-1. Install dependencies:
+---
+
+## ⚡ Quick start
+
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-2. Create your environment file from the example:
+### 2. Create environment file
 
 ```bash
 cp .env.example .env
 ```
 
-3. Update the values in `.env` for your environment.
+### 3. Configure variables
 
-4. Start the service:
+Edit `.env` with your setup values.
+
+### 4. Run the app
 
 ```bash
 npm run dev
 ```
 
-Or in production:
+Or production:
 
 ```bash
 npm start
 ```
 
-5. Open:
+### 5. Open in browser
 
-```text
+```
 http://localhost:3000
 ```
 
-## Environment variables
+---
 
-Main variables used by the app:
+## 🔐 Environment variables
 
 ```env
 PORT=3000
@@ -148,29 +169,29 @@ PROCESSED_DIR=/downloads/.imported
 REQUEST_TIMEOUT_MS=30000
 ```
 
-Note: `.env.example` currently reflects your local setup style. Before publishing or sharing the repository, make sure it does not contain real credentials or internal-only addresses.
+---
 
-## API
+## 🔌 API
 
 ### `GET /health`
 
 Returns service status.
 
+---
+
 ### `GET /api/search?query=<text>`
 
-Searches books through `Prowlarr`.
-
-Example:
+Search ebooks using Prowlarr.
 
 ```bash
 curl "http://localhost:3000/api/search?query=dune"
 ```
 
+---
+
 ### `POST /api/download`
 
-Starts a download from a selected result.
-
-Example:
+Start a manual download.
 
 ```bash
 curl -X POST "http://localhost:3000/api/download" \
@@ -182,11 +203,11 @@ curl -X POST "http://localhost:3000/api/download" \
   }'
 ```
 
+---
+
 ### `POST /api/request`
 
-Searches automatically, picks the best result, and sends it to `qBittorrent`.
-
-Example:
+Automatically search and download the best result.
 
 ```bash
 curl -X POST "http://localhost:3000/api/request" \
@@ -196,38 +217,46 @@ curl -X POST "http://localhost:3000/api/request" \
   }'
 ```
 
+---
+
 ### `GET /api/jobs`
 
-Returns tracked download/import jobs.
+Returns tracked jobs.
 
-## Frontend
+---
 
-The frontend is a simple vanilla JS app served from `web/`.
+## 🖥️ Frontend
 
-It includes:
+A minimal vanilla JavaScript UI served from `/web`.
 
-* search input
-* search results list
-* per-result download button
-* `Download best` action using `/api/request`
+Includes:
 
-No frontend framework is required.
+* Search input
+* Results list
+* Download buttons
+* “Download best” action
 
-## Automation flow
+No frontend framework required.
 
-1. The user searches a book from the UI or API.
-2. `ProwlarrService` returns ranked results, prioritizing `EPUB`.
-3. `qBittorrentService` sends the selected magnet to qBittorrent.
-4. The watcher monitors the download directory.
-5. `ImportService` uploads supported book files to Calibre-Web.
-6. The imported file is moved or deleted depending on `POST_IMPORT_ACTION`.
+---
+
+## 🔄 Automation flow
+
+1. User searches a book
+2. Prowlarr returns ranked results (EPUB prioritized)
+3. qBittorrent starts the download
+4. Watcher detects completed files
+5. ImportService uploads to Calibre-Web
+6. File is moved or deleted
+
+---
 
 ## 🐳 Docker
 
 ### Pull image
 
 ```bash
-docker pull ghcr.io/<your-username>/bookseerr:latest
+docker pull ghcr.io/cruzadera/bookseerr:latest
 ```
 
 ### Run container
@@ -240,39 +269,46 @@ docker run -d \
   -v /your/library:/library \
   -v /your/data:/data \
   --name bookseerr \
-  ghcr.io/<your-username>/bookseerr:latest
+  ghcr.io/cruzadera/bookseerr:latest
 ```
+
+---
 
 ### docker-compose
 
-The repository includes `docker-compose.example.yml` for a single-service `bookseerr` deployment.
+A `docker-compose.example.yml` is included.
 
-1. Copy it to your deployment directory as `docker-compose.yml`.
-2. Update the placeholder bind mounts so they match your host paths.
-3. Make sure the `build` path points at your local `bookseerr` checkout.
-4. Start the container with `docker compose up -d --build`.
+Steps:
 
-### Notes
+1. Copy it to `docker-compose.yml`
+2. Update volumes
+3. Adjust build path
+4. Run:
 
-* Make sure `/downloads` points to the same shared download directory used by qBittorrent so the watcher can detect completed files.
-* Make sure `/library` points to the library location expected by your Calibre-Web workflow.
-* Mount `/data` to persistent storage so `STATE_FILE=/data/state.json` survives container restarts.
-* If your host uses custom ownership or a NAS share, ensure the container has the correct file permissions and UID/GID mapping when needed.
+```bash
+docker compose up -d --build
+```
 
-## Development notes
+---
 
-* Existing import logic was kept intact.
-* Existing watcher logic was kept intact.
-* Existing logging and job tracking were preserved.
-* The web UI is intentionally small and framework-free.
+## 🧠 Notes
 
-## Roadmap
+* `/downloads` must match qBittorrent path
+* `/library` must match Calibre-Web library
+* `/data` ensures persistence
+* Check permissions if using NAS
 
-- [ ] Multi-user support
-- [ ] Automatic shelf assignment
-- [ ] Notifications
-- [ ] Improved ranking logic
+---
 
-## License
+## 🛣️ Roadmap
 
-No license file is included yet. Add one before making the repository public if you want to define reuse terms explicitly.
+* [ ] Multi-user support
+* [ ] Automatic shelves
+* [ ] Notifications
+* [ ] Better ranking logic
+
+---
+
+## 📄 License
+
+No license defined yet. Add one (MIT recommended) before public distribution.
