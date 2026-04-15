@@ -5,14 +5,43 @@ const resultsContainer = document.getElementById("results");
 const statusElement = document.getElementById("status");
 const destinationShelfField = document.getElementById("destination-shelf-field");
 const destinationShelfSelect = document.getElementById("destination-shelf");
+const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+const pageViews = Array.from(document.querySelectorAll("[data-page-view]"));
+const sidebar = document.querySelector(".sidebar");
+const sidebarToggle = document.getElementById("sidebar-toggle");
 
 const uiState = {
   destinationShelfEnabled: false,
 };
 
+function setActivePage(page) {
+  navLinks.forEach((link) => {
+    const isActive = link.dataset.page === page;
+    link.classList.toggle("active", isActive);
+    link.setAttribute("aria-current", isActive ? "page" : "false");
+  });
+
+  pageViews.forEach((view) => {
+    view.classList.toggle("hidden", view.dataset.pageView !== page);
+  });
+}
+
 function setStatus(message, isError = false) {
   statusElement.textContent = message;
   statusElement.classList.toggle("error", isError);
+}
+
+function setSidebarCollapsed(isCollapsed) {
+  if (!sidebar || !sidebarToggle) {
+    return;
+  }
+
+  sidebar.classList.toggle("is-collapsed", isCollapsed);
+  sidebarToggle.setAttribute("aria-pressed", isCollapsed ? "true" : "false");
+  sidebarToggle.setAttribute(
+    "aria-label",
+    isCollapsed ? "Expand sidebar" : "Collapse sidebar",
+  );
 }
 
 function escapeHtml(value) {
@@ -190,8 +219,11 @@ async function requestBook() {
 }
 
 loadSettings();
+setActivePage("home");
 searchButton.addEventListener("click", search);
-requestButton.addEventListener("click", requestBook);
+if (requestButton) {
+  requestButton.addEventListener("click", requestBook);
+}
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     search();
@@ -210,3 +242,14 @@ resultsContainer.addEventListener("click", (event) => {
     button.dataset.protocol || "torrent",
   );
 });
+navLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    setActivePage(link.dataset.page || "home");
+  });
+});
+
+if (sidebarToggle) {
+  sidebarToggle.addEventListener("click", () => {
+    setSidebarCollapsed(!sidebar?.classList.contains("is-collapsed"));
+  });
+}
