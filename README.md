@@ -332,10 +332,10 @@ docker compose up -d --build
 
 ## 🛣️ Roadmap
 
-* [ ] Multi-user support
 * [ ] Automatic shelves
+* [ ] Upgrading UI
+* [ ] Add configurable settings
 * [ ] Notifications
-* [ ] Better ranking logic
 
 ---
 
