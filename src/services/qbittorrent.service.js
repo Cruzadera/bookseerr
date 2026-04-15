@@ -74,7 +74,7 @@ class QBittorrentService {
     );
 
     this.loggedIn = true;
-    this.logger.info("Sesion iniciada en qBittorrent");
+    this.logger.info("Session started on qBittorrent");
   }
 
   async addDownload({
@@ -117,10 +117,10 @@ class QBittorrentService {
       }
 
       if (!finalUrl.startsWith("magnet:")) {
-        throw new Error("No se pudo obtener magnet link válido");
+        throw new Error("Could not obtain a valid magnet link");
       }
 
-      this.logger.info("Enviando magnet a qBittorrent", {
+      this.logger.info("Sending magnet to qBittorrent", {
         destinationId: target.destinationId,
         destinationLabel: target.destinationLabel,
         category: target.category,
@@ -135,7 +135,7 @@ class QBittorrentService {
         });
       } catch (error) {
         if (error.response?.status === 403 && target.savePath) {
-          this.logger.warn("qBittorrent rechazo la ruta, reintentando una vez", {
+          this.logger.warn("qBittorrent rejected the path, retrying once", {
             destinationId: target.destinationId,
             destinationLabel: target.destinationLabel,
             category: target.category,
@@ -176,7 +176,7 @@ class QBittorrentService {
           ? e.response.data
           : JSON.stringify(e.response?.data || {});
 
-      this.logger.error("Error añadiendo descarga", {
+      this.logger.error("Error adding download", {
         destinationId: target.destinationId,
         destinationLabel: target.destinationLabel,
         category: target.category,
@@ -188,7 +188,7 @@ class QBittorrentService {
 
       if (e.response?.status === 403 && target.savePath) {
         throw new Error(
-          `qBittorrent rechazo la ruta ${target.savePath} para ${target.destinationLabel || target.destinationId || "la estanteria seleccionada"}. Asegurate de que exista y sea escribible dentro del contenedor de qBittorrent.`,
+          `qBittorrent rejected the path ${target.savePath} for ${target.destinationLabel || target.destinationId || "the selected shelf"}. Make sure it exists and is writable within the qBittorrent container.`,
         );
       }
 

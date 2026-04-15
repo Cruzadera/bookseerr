@@ -6,6 +6,7 @@
     <title>Bookseerr</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/styles.css" />
+    <script src="/i18n.js" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -14,7 +15,7 @@
           <div class="brand-block">
             <div class="brand-mark" aria-hidden="true">B</div>
             <div class="brand-copy">
-              <p class="eyebrow">Ebook request manager</p>
+              <p class="eyebrow" data-i18n="ui.manager">Ebook request manager</p>
               <h1>Bookseerr</h1>
             </div>
             <button
@@ -40,7 +41,7 @@
                   <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" />
                 </svg>
               </span>
-              <span class="nav-text">Inicio</span>
+              <span class="nav-text" data-i18n="ui.status.searching">Inicio</span>
             </button>
             <button type="button" class="nav-link" data-page="settings">
               <span class="nav-icon" aria-hidden="true">
@@ -48,7 +49,7 @@
                   <path d="m19.4 13 .1-1-.1-1 2-1.6-2-3.4-2.4 1a7.9 7.9 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.9 7.9 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6-.1 1 .1 1-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" />
                 </svg>
               </span>
-              <span class="nav-text">Configuración</span>
+              <span class="nav-text" data-i18n="common.error">Configuración</span>
             </button>
           </nav>
 
@@ -59,7 +60,7 @@
                   <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-3-4 3-4-3-4 3V6a2 2 0 0 1 2-2Z" />
                 </svg>
               </span>
-              <span class="nav-text">Más páginas</span>
+              <span class="nav-text" data-i18n="common.error">Más páginas</span>
             </button>
           </div>
         </aside>
@@ -67,10 +68,10 @@
         <section class="page-shell">
           <section class="page-view" data-page-view="home">
             <section class="hero">
-              <p class="hero-lead">
+              <p class="hero-lead" data-i18n="ui.heroHeading">
                 Search, download, and auto-import books in one place.
               </p>
-              <p class="subtitle">
+              <p class="subtitle" data-i18n="ui.heroPowered">
                 Powered by Prowlarr, qBittorrent, and Calibre-Web.
               </p>
             </section>
@@ -78,22 +79,23 @@
             <section class="panel">
               <div class="search-row">
                 <label class="field">
-                  <span>Book title</span>
+                  <span data-i18n="ui.bookTitle">Book title</span>
                   <input
                     id="search"
                     type="text"
                     placeholder="Search by title or author"
+                    data-i18n-placeholder="ui.searchPlaceholder"
                     autocomplete="off"
                   />
                 </label>
                 <label id="destination-shelf-field" class="field field-compact hidden">
-                  <span>Estanteria de destino</span>
+                  <span data-i18n="common.error">Estanteria de destino</span>
                   <select id="destination-shelf">
-                    <option value="">Biblioteca general</option>
+                    <option value="" data-i18n="common.error">Biblioteca general</option>
                   </select>
                 </label>
                 <div class="actions">
-                  <button id="search-button" type="button">Search</button>
+                  <button id="search-button" type="button" data-i18n="ui.searchButton">Search</button>
                 </div>
               </div>
 
@@ -105,8 +107,8 @@
 
           <section class="page-view hidden" data-page-view="settings">
             <section class="placeholder-panel">
-              <p class="placeholder-label">Configuración</p>
-              <h2>Próximamente</h2>
+              <p class="placeholder-label" data-i18n="common.error">Configuración</p>
+              <h2 data-i18n="common.error">Próximamente</h2>
             </section>
           </section>
         </section>

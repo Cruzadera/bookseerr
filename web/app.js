@@ -1,3 +1,7 @@
+// Global i18n instance
+let i18n = null;
+
+// DOM Elements
 const searchInput = document.getElementById("search");
 const searchButton = document.getElementById("search-button");
 const requestButton = document.getElementById("request-button");
@@ -13,6 +17,21 @@ const sidebarToggle = document.getElementById("sidebar-toggle");
 const uiState = {
   destinationShelfEnabled: false,
 };
+
+// Helper function to translate UI elements with data-i18n attributes
+function translateUI() {
+  if (!i18n) return;
+
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    const key = element.getAttribute("data-i18n");
+    element.textContent = i18n.t(key);
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+    const key = element.getAttribute("data-i18n-placeholder");
+    element.placeholder = i18n.t(key);
+  });
+}
 
 function setActivePage(page) {
   navLinks.forEach((link) => {
@@ -57,7 +76,7 @@ async function handleJsonResponse(response) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Request failed");
+    throw new Error(data.error || (i18n ? i18n.t("errors.requestFailed") : "Request failed"));
   }
 
   return data;
@@ -79,8 +98,9 @@ async function loadSettings() {
       return;
     }
 
+    const defaultLabel = i18n ? i18n.t("common.error") : "General library";
     destinationShelfSelect.innerHTML = [
-      '<option value="">Biblioteca general</option>',
+      `<option value="">${defaultLabel}</option>`,
       ...destinationShelves.map(
         (item) =>
           `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`,
@@ -105,19 +125,21 @@ async function search() {
   const query = searchInput.value.trim();
 
   if (!query) {
-    setStatus("Enter a book title to search.", true);
+    setStatus(i18n ? i18n.t("ui.status.enterTitle") : "Enter a book title to search.", true);
     resultsContainer.innerHTML = "";
     return;
   }
 
-  setStatus("Searching...");
+  setStatus(i18n ? i18n.t("ui.status.searching") : "Searching...");
   resultsContainer.innerHTML = "";
 
   try {
     const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
     const data = await handleJsonResponse(res);
     renderResults(data);
-    setStatus(`${data.count} result(s) found.`);
+    const count = data.count || 0;
+    const message = i18n ? i18n.t("ui.status.foundResults", { count }) : `${count} result(s) found.`;
+    setStatus(message);
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -127,10 +149,15 @@ function renderResults(data) {
   const results = Array.isArray(data.results) ? data.results : [];
 
   if (!results.length) {
-    resultsContainer.innerHTML =
-      '<div class="empty-state">No matching books found.</div>';
+    const emptyMsg = i18n ? i18n.t("ui.noResults") : "No matching books found.";
+    resultsContainer.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
     return;
   }
+
+  const formatLabel = i18n ? i18n.t("ui.format") : "Format";
+  const seedersLabel = i18n ? i18n.t("ui.seeders") : "Seeders";
+  const downloadBtn = i18n ? i18n.t("ui.searchButton") : "Download";
+  const unknownIndexer = i18n ? i18n.t("ui.indexer") : "Unknown indexer";
 
   resultsContainer.innerHTML = results
     .map(
@@ -138,15 +165,15 @@ function renderResults(data) {
         <article class="result-card">
           <div class="result-copy">
             <h2>${escapeHtml(item.title)}</h2>
-            <p>${escapeHtml(item.indexer || "Unknown indexer")}</p>
+            <p>${escapeHtml(item.indexer || unknownIndexer)}</p>
           </div>
           <dl class="meta">
             <div>
-              <dt>Format</dt>
+              <dt>${formatLabel}</dt>
               <dd>${escapeHtml(item.format || "unknown")}</dd>
             </div>
             <div>
-              <dt>Seeders</dt>
+              <dt>${seedersLabel}</dt>
               <dd>${item.seeders ?? 0}</dd>
             </div>
           </dl>
@@ -157,7 +184,7 @@ function renderResults(data) {
             data-download-url="${encodeURIComponent(item.downloadUrl || "")}"
             data-protocol="${escapeHtml(item.protocol || "torrent")}"
           >
-            Download
+            ${downloadBtn}
           </button>
         </article>
       `,
@@ -166,7 +193,8 @@ function renderResults(data) {
 }
 
 async function downloadBook(title, downloadUrl, protocol) {
-  setStatus(`Starting download for "${title}"...`);
+  const msg = i18n ? i18n.t("ui.status.downloadStarting", { title }) : `Starting download for "${title}"...`;
+  setStatus(msg);
 
   try {
     const destinationId = getSelectedDestinationShelf();
@@ -184,7 +212,8 @@ async function downloadBook(title, downloadUrl, protocol) {
     });
 
     const data = await handleJsonResponse(res);
-    setStatus(data.message || "Download started.");
+    const successMsg = data.message || (i18n ? i18n.t("ui.status.downloadSuccess") : "Download started.");
+    setStatus(successMsg);
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -194,11 +223,13 @@ async function requestBook() {
   const query = searchInput.value.trim();
 
   if (!query) {
-    setStatus("Enter a book title before requesting a download.", true);
+    const msg = i18n ? i18n.t("ui.alerts.enterBeforeRequest") : "Enter a book title before requesting a download.";
+    setStatus(msg, true);
     return;
   }
 
-  setStatus("Looking for the best match...");
+  const msg = i18n ? i18n.t("ui.status.requesting") : "Looking for the best match...";
+  setStatus(msg);
 
   try {
     const destinationId = getSelectedDestinationShelf();
@@ -211,45 +242,97 @@ async function requestBook() {
     });
 
     const data = await handleJsonResponse(res);
-    setStatus(`Download started for "${data.selected}".`);
-    alert("Download started!");
+    const successMsg = i18n ? i18n.t("ui.status.requestSuccess", { title: data.selected }) : `Download started for "${data.selected}".`;
+    setStatus(successMsg);
+    const alertMsg = i18n ? i18n.t("ui.alerts.downloadStarted") : "Download started!";
+    alert(alertMsg);
   } catch (error) {
     setStatus(error.message, true);
   }
 }
 
-loadSettings();
-setActivePage("home");
-searchButton.addEventListener("click", search);
-if (requestButton) {
-  requestButton.addEventListener("click", requestBook);
-}
-searchInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    search();
-  }
-});
-resultsContainer.addEventListener("click", (event) => {
-  const button = event.target.closest(".download-button");
-
-  if (!button) {
+// Language switcher
+function createLanguageSwitcher() {
+  // Check if switcher already exists
+  if (document.getElementById("language-switcher")) {
     return;
   }
 
-  downloadBook(
-    button.dataset.title,
-    decodeURIComponent(button.dataset.downloadUrl || ""),
-    button.dataset.protocol || "torrent",
-  );
-});
-navLinks.forEach((link) => {
-  link.addEventListener("click", () => {
-    setActivePage(link.dataset.page || "home");
-  });
-});
+  const eyebrow = document.querySelector(".eyebrow");
+  if (!eyebrow || !eyebrow.parentElement) {
+    return;
+  }
 
-if (sidebarToggle) {
-  sidebarToggle.addEventListener("click", () => {
-    setSidebarCollapsed(!sidebar?.classList.contains("is-collapsed"));
+  const brandCopy = eyebrow.parentElement;
+  const switcher = document.createElement("div");
+  switcher.id = "language-switcher";
+  switcher.className = "language-switcher";
+  switcher.innerHTML = `
+    <select id="language-select" aria-label="Language">
+      <option value="en">English</option>
+      <option value="es-ES">Español</option>
+    </select>
+  `;
+
+  brandCopy.appendChild(switcher);
+
+  const select = document.getElementById("language-select");
+  select.value = i18n.getLanguage();
+  select.addEventListener("change", (e) => {
+    const lang = e.target.value;
+    i18n.setLanguage(lang);
+    translateUI();
   });
 }
+
+// Initialize app
+(async () => {
+  try {
+    i18n = await window.initI18n();
+    translateUI();
+    createLanguageSwitcher();
+  } catch (error) {
+    console.error("Failed to initialize i18n:", error);
+  }
+
+  loadSettings();
+  setActivePage("home");
+
+  searchButton.addEventListener("click", search);
+  if (requestButton) {
+    requestButton.addEventListener("click", requestBook);
+  }
+
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      search();
+    }
+  });
+
+  resultsContainer.addEventListener("click", (event) => {
+    const button = event.target.closest(".download-button");
+
+    if (!button) {
+      return;
+    }
+
+    downloadBook(
+      button.dataset.title,
+      decodeURIComponent(button.dataset.downloadUrl || ""),
+      button.dataset.protocol || "torrent",
+    );
+  });
+
+  navLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      setActivePage(link.dataset.page || "home");
+    });
+  });
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", () => {
+      const isCollapsed = sidebar.classList.contains("is-collapsed");
+      setSidebarCollapsed(!isCollapsed);
+    });
+  }
+})();

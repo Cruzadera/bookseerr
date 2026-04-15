@@ -55,11 +55,11 @@ class CalibreWebService {
     });
 
     if (typeof response.data === "string" && response.data.includes("Login")) {
-      throw new Error("No fue posible autenticarse en Calibre-Web");
+      throw new Error("Failed to authenticate with Calibre-Web");
     }
 
     this.loggedIn = true;
-    this.logger.info("Sesion iniciada en Calibre-Web");
+    this.logger.info("Session started on Calibre-Web");
   }
 
   async discoverUploadForm() {
@@ -71,7 +71,7 @@ class CalibreWebService {
 
     if (!form.length) {
       throw new Error(
-        "No se encontro el formulario de upload en Calibre-Web. Revisa CALIBRE_WEB_UPLOAD_PAGE y permisos de upload.",
+        "Upload form not found in Calibre-Web. Check CALIBRE_WEB_UPLOAD_PAGE and upload permissions.",
       );
     }
 
@@ -305,7 +305,7 @@ class CalibreWebService {
           pageTitle === normalizedTarget ||
           pageTitle.includes(normalizedTarget)
         ) {
-          this.logger.info("Shelf resuelta por sondeo directo", {
+          this.logger.info("Shelf resolved by direct probing", {
             shelfName,
             shelfId,
             shelfUrl,
@@ -314,7 +314,7 @@ class CalibreWebService {
           return shelfId;
         }
       } catch (error) {
-        this.logger.debug("Fallo sondeando shelf candidata", {
+        this.logger.debug("Failed probing candidate shelf", {
           shelfId,
           shelfName,
           error: error.message,
@@ -346,7 +346,7 @@ class CalibreWebService {
           this.matchesShelfName(item, shelfName),
         );
 
-        this.logger.info("Shelves detectadas en pagina candidata", {
+        this.logger.info("Shelves detected in candidate page", {
           pageUrl,
           shelfName,
           detectedShelves: shelfRefs.map((item) => ({
@@ -368,7 +368,7 @@ class CalibreWebService {
           return Number(match[1]);
         }
       } catch (error) {
-        this.logger.warn("No fue posible inspeccionar pagina para resolver shelf", {
+        this.logger.warn("Could not inspect page to resolve shelf", {
           pageUrl,
           shelfName,
           error: error.message,
@@ -389,7 +389,7 @@ class CalibreWebService {
       const refererResponse = await this.client.get(refererUrl);
       csrfToken = this.extractCsrfToken(refererResponse.data);
     } catch (error) {
-      this.logger.warn("No fue posible obtener csrf_token para anadir shelf", {
+      this.logger.warn("Could not obtain csrf_token to add shelf", {
         shelfName,
         shelfId,
         bookId,
@@ -433,7 +433,7 @@ class CalibreWebService {
           `/admin/book/${bookId}`,
         );
       } catch (error) {
-        this.logger.warn("No fue posible verificar la asignacion de shelf", {
+        this.logger.warn("Could not verify shelf assignment", {
           shelfName,
           shelfId,
           bookId,
@@ -443,7 +443,7 @@ class CalibreWebService {
       }
     }
 
-    this.logger.info("Intento de anadir libro a shelf", {
+    this.logger.info("Attempted to add book to shelf", {
       shelfName,
       shelfId,
       bookId,
@@ -464,7 +464,7 @@ class CalibreWebService {
     const candidateUrls = this.collectCandidateEditUrls(uploadResponse);
     const bookId = candidateUrls.map((url) => this.extractBookId(url)).find(Boolean) || null;
 
-    this.logger.info("Buscando pagina de metadata para asignar shelf", {
+    this.logger.info("Looking for metadata page to assign shelf", {
       shelfName: metadata.shelfName || null,
       bookId,
       candidateUrls,
@@ -489,7 +489,7 @@ class CalibreWebService {
           return true;
         }
       } else {
-        this.logger.warn("No se pudo resolver el id de la shelf solicitada", {
+        this.logger.warn("Could not resolve the requested shelf id", {
           shelfName: metadata.shelfName,
           configuredShelfId: metadata.shelfId || null,
           candidateUrls,
@@ -526,7 +526,7 @@ class CalibreWebService {
       ? await this.assignShelfAfterUpload(response, metadata)
       : false;
 
-    this.logger.info("Libro subido a Calibre-Web", {
+    this.logger.info("Book uploaded to Calibre-Web", {
       filePath,
       destinationId: metadata.destinationId || null,
       destinationLabel: metadata.destinationLabel || null,
