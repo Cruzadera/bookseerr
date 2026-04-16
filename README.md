@@ -341,4 +341,4 @@ docker compose up -d --build
 
 ## 📄 License
 
-No license defined yet. Add one (MIT recommended) before public distribution.
+MIT License © 2026 Cruzadera
