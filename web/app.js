@@ -333,6 +333,21 @@ function populateIndexerOptions() {
     .join("");
 }
 
+function syncQuickFiltersWithSettings() {
+  if (quickOnlyEpubInput) {
+    quickOnlyEpubInput.checked = uiState.settings.filters.preferredFormat === "epub";
+  }
+
+  if (quickSpanishOnlyInput) {
+    quickSpanishOnlyInput.checked = uiState.settings.filters.language === "es";
+  }
+
+  if (quickUnder20Input) {
+    const maxSizeMB = Number(uiState.settings.filters.maxSizeMB || 0);
+    quickUnder20Input.checked = maxSizeMB > 0 && maxSizeMB <= 20;
+  }
+}
+
 function populateSettingsForm() {
   if (!settingsForm) {
     return;
@@ -376,6 +391,7 @@ function applyLoadedSettings(data) {
   populateDestinationShelfOptions();
   populateIndexerOptions();
   populateSettingsForm();
+  syncQuickFiltersWithSettings();
 }
 
 async function loadSettings() {
