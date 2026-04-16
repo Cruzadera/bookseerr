@@ -8,6 +8,9 @@ Bookseerr is a self-hosted app that automates ebook search, download, and import
 
 ## 📸 Preview
 
+![Home](./docs/home.png)
+![Settings](./docs/settings.png)
+
 ---
 
 ## ✨ Highlights
