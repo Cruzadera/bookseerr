@@ -243,6 +243,45 @@ function formatSize(sizeMB) {
   return `${numeric >= 10 ? numeric.toFixed(0) : numeric.toFixed(1)} MB`;
 }
 
+function formatPublishYear(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : `${date.getFullYear()}`;
+}
+
+function inferAuthorFromTitle(title = "") {
+  const match = `${title}`.match(/\bby\s+([^-()[\]|]{2,60})/i);
+  return match ? match[1].trim() : "";
+}
+
+function getResultAuthor(item) {
+  const fallback = i18n ? i18n.t("ui.unknownAuthor") : "Unknown author";
+  const author = `${item?.author || ""}`.trim() || inferAuthorFromTitle(item?.title || "");
+  return author || fallback;
+}
+
+function buildCoverMarkup(item) {
+  const coverUrl = `${item?.coverUrl || ""}`.trim();
+  const title = `${item?.title || "Book"}`.trim();
+  const initial = escapeHtml((title.charAt(0) || "?").toUpperCase());
+  const formatTag = escapeHtml(`${item?.format || "book"}`.trim().toUpperCase());
+
+  return `
+    <div class="result-cover">
+      ${
+        coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />`
+          : ""
+      }
+      <span class="result-cover-fallback"${coverUrl ? ' style="display:none;"' : ""} aria-hidden="true">${initial}</span>
+      <span class="result-cover-format">${formatTag}</span>
+    </div>
+  `;
+}
+
 async function handleJsonResponse(response) {
   const data = await response.json().catch(() => ({}));
 
@@ -560,42 +599,70 @@ function renderResults(data) {
   const seedersLabel = i18n ? i18n.t("ui.seeders") : "Seeders";
   const sizeLabel = i18n ? i18n.t("ui.size") : "Size";
   const downloadBtn = i18n ? i18n.t("common.download") : "Download";
+  const requestBtn = i18n ? i18n.t("ui.requestButton") : "Request best";
   const unknownIndexer = i18n ? i18n.t("ui.indexer") : "Unknown indexer";
+  const bestMatchLabel = i18n ? i18n.t("ui.bestMatch") : "Best match";
 
   resultsContainer.innerHTML = results
-    .map(
-      (item) => `
-        <article class="result-card">
-          <div class="result-copy">
-            <h2>${escapeHtml(item.title)}</h2>
-            <p>${escapeHtml(item.indexer || unknownIndexer)}</p>
+    .map((item, index) => {
+      const author = escapeHtml(getResultAuthor(item));
+      const source = escapeHtml(item.indexer || unknownIndexer);
+      const year = formatPublishYear(item.publishDate);
+      const formatValue = escapeHtml(`${item.format || "unknown"}`.toUpperCase());
+      const featuredAction =
+        index === 0
+          ? `<button type="button" class="request-best-inline secondary">${requestBtn}</button>`
+          : "";
+      const featuredBadge =
+        index === 0 ? `<span class="result-badge">${escapeHtml(bestMatchLabel)}</span>` : "";
+
+      return `
+        <article class="result-card ${index === 0 ? "is-featured" : ""}">
+          ${buildCoverMarkup(item)}
+          <div class="result-main">
+            <div class="result-head">
+              <div class="result-copy">
+                <div class="result-title-row">
+                  <h2>${escapeHtml(item.title)}</h2>
+                  ${featuredBadge}
+                </div>
+                <p class="result-author">${author}</p>
+              </div>
+              <div class="result-actions">
+                ${featuredAction}
+                <button
+                  type="button"
+                  class="download-button"
+                  data-title="${escapeHtml(item.title)}"
+                  data-download-url="${encodeURIComponent(item.downloadUrl || "")}"
+                  data-protocol="${escapeHtml(item.protocol || "torrent")}" 
+                >
+                  ${downloadBtn}
+                </button>
+              </div>
+            </div>
+            <div class="result-submeta">
+              <span>${source}</span>
+              ${year ? `<span>${year}</span>` : ""}
+            </div>
+            <dl class="meta meta-pills">
+              <div>
+                <dt>${formatLabel}</dt>
+                <dd>${formatValue}</dd>
+              </div>
+              <div>
+                <dt>${seedersLabel}</dt>
+                <dd>${Number(item.seeders ?? 0)}</dd>
+              </div>
+              <div>
+                <dt>${sizeLabel}</dt>
+                <dd>${formatSize(item.sizeMB)}</dd>
+              </div>
+            </dl>
           </div>
-          <dl class="meta">
-            <div>
-              <dt>${formatLabel}</dt>
-              <dd>${escapeHtml(item.format || "unknown")}</dd>
-            </div>
-            <div>
-              <dt>${seedersLabel}</dt>
-              <dd>${item.seeders ?? 0}</dd>
-            </div>
-            <div>
-              <dt>${sizeLabel}</dt>
-              <dd>${formatSize(item.sizeMB)}</dd>
-            </div>
-          </dl>
-          <button
-            type="button"
-            class="download-button"
-            data-title="${escapeHtml(item.title)}"
-            data-download-url="${encodeURIComponent(item.downloadUrl || "")}"
-            data-protocol="${escapeHtml(item.protocol || "torrent")}" 
-          >
-            ${downloadBtn}
-          </button>
         </article>
-      `,
-    )
+      `;
+    })
     .join("");
 }
 
@@ -695,6 +762,13 @@ async function requestBook() {
 
   if (resultsContainer) {
     resultsContainer.addEventListener("click", (event) => {
+      const requestAction = event.target.closest(".request-best-inline");
+
+      if (requestAction) {
+        requestBook();
+        return;
+      }
+
       const button = event.target.closest(".download-button");
 
       if (!button) {

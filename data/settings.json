@@ -1,0 +1,20 @@
+{
+  "filters": {
+    "preferredFormat": "epub",
+    "excludedFormats": [
+      "pdf"
+    ],
+    "indexers": [],
+    "minSeeds": 5,
+    "maxSizeMB": 50,
+    "language": "any"
+  },
+  "download": {
+    "autoDownload": false,
+    "onlyIfPreferredFormat": true
+  },
+  "calibre": {
+    "defaultShelf": null,
+    "rememberLastShelf": true
+  }
+}
