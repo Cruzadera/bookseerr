@@ -6,13 +6,53 @@ function asyncHandler(fn) {
   };
 }
 
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function createApiRouter({
   prowlarrService,
   qbittorrentService,
   jobService,
   destinationShelves,
+  settingsService,
 }) {
   const router = express.Router();
+
+  function getCurrentSettings() {
+    return (
+      settingsService?.getSettings?.() || {
+        filters: {},
+        download: {},
+        calibre: {},
+      }
+    );
+  }
+
+  function applySearchOverrides(settings, query = {}) {
+    const next = clone(settings || {});
+    next.filters = next.filters || {};
+
+    if (`${query.onlyEpub || ""}` === "true") {
+      next.filters.preferredFormat = "epub";
+    }
+
+    if (`${query.spanishOnly || ""}` === "true") {
+      next.filters.language = "es";
+    }
+
+    const maxSizeMB = Number(query.maxSizeMB || 0);
+
+    if (Number.isFinite(maxSizeMB) && maxSizeMB > 0) {
+      const currentMax = Number(next.filters.maxSizeMB || 0);
+      next.filters.maxSizeMB =
+        Number.isFinite(currentMax) && currentMax > 0
+          ? Math.min(currentMax, maxSizeMB)
+          : maxSizeMB;
+    }
+
+    return next;
+  }
 
   function resolveDestinationShelf(destinationId) {
     if (!destinationId) {
@@ -100,7 +140,8 @@ function createApiRouter({
         return res.status(400).json({ error: "Query is required" });
       }
 
-      const results = await prowlarrService.search(query);
+      const activeSettings = applySearchOverrides(getCurrentSettings(), req.query || {});
+      const results = await prowlarrService.search(query, activeSettings.filters);
       return res.json({ query, count: results.length, results });
     }),
   );
@@ -150,13 +191,25 @@ function createApiRouter({
         return res.status(400).json({ error: "Query is required" });
       }
 
-      const results = await prowlarrService.search(normalizedQuery);
+      const settings = getCurrentSettings();
+      const results = await prowlarrService.search(normalizedQuery, settings.filters);
 
       if (!results.length) {
         return res.status(404).json({ error: "No results found" });
       }
 
       const best = results[0];
+      const preferredFormat = `${settings.filters?.preferredFormat || "any"}`.toLowerCase();
+      const mustMatchPreferred =
+        Boolean(settings.download?.onlyIfPreferredFormat) &&
+        preferredFormat !== "any";
+
+      if (mustMatchPreferred && best.format !== preferredFormat) {
+        return res.status(409).json({
+          error: `Best result does not match preferred format: ${preferredFormat}`,
+        });
+      }
+
       const started = await startDownload({
         title: best.title,
         downloadUrl: best.downloadUrl,

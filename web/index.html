@@ -91,7 +91,24 @@
                 </label>
                 <div class="actions">
                   <button id="search-button" type="button" data-i18n="ui.searchButton">Search</button>
+                  <button id="request-button" type="button" class="secondary" data-i18n="ui.requestButton">Request best</button>
                 </div>
+              </div>
+
+              <div class="quick-filters">
+                <span class="quick-filter-label" data-i18n="ui.quickFilters.title">Quick filters</span>
+                <label class="chip-toggle">
+                  <input id="quick-only-epub" type="checkbox" />
+                  <span data-i18n="ui.quickFilters.onlyEpub">Only EPUB</span>
+                </label>
+                <label class="chip-toggle">
+                  <input id="quick-spanish-only" type="checkbox" />
+                  <span data-i18n="ui.quickFilters.spanishOnly">Spanish only</span>
+                </label>
+                <label class="chip-toggle">
+                  <input id="quick-under-20" type="checkbox" />
+                  <span data-i18n="ui.quickFilters.under20MB">&lt; 20 MB</span>
+                </label>
               </div>
 
               <p id="status" class="status" role="status" aria-live="polite"></p>
@@ -101,9 +118,121 @@
           </section>
 
           <section class="page-view hidden" data-page-view="settings">
-            <section class="placeholder-panel">
-              <p class="placeholder-label" data-i18n="ui.placeholders.settings">Settings</p>
-              <h2 data-i18n="ui.placeholders.comingSoon">Coming soon</h2>
+            <section class="panel settings-panel">
+              <div class="settings-header">
+                <p class="placeholder-label" data-i18n="ui.placeholders.settings">Settings</p>
+                <h2 data-i18n="ui.settings.title">Search and download preferences</h2>
+                <p class="settings-copy" data-i18n="ui.settings.description">
+                  Adjust ranking, limits, and Calibre shelf behavior.
+                </p>
+              </div>
+
+              <form id="settings-form" class="settings-form">
+                <div class="settings-grid">
+                  <section class="settings-group">
+                    <h3 data-i18n="ui.settings.filtersTitle">Search filters</h3>
+
+                    <label class="field">
+                      <span data-i18n="ui.settings.preferredFormat">Preferred format</span>
+                      <select id="preferred-format">
+                        <option value="any" data-i18n="ui.settings.anyFormat">Any format</option>
+                        <option value="epub">EPUB</option>
+                        <option value="mobi">MOBI</option>
+                        <option value="azw3">AZW3</option>
+                        <option value="pdf">PDF</option>
+                      </select>
+                    </label>
+
+                    <fieldset class="field checkbox-fieldset">
+                      <legend data-i18n="ui.settings.excludedFormats">Excluded formats</legend>
+                      <div class="checkbox-grid">
+                        <label class="chip-toggle">
+                          <input type="checkbox" name="excludedFormats" value="epub" />
+                          <span>EPUB</span>
+                        </label>
+                        <label class="chip-toggle">
+                          <input type="checkbox" name="excludedFormats" value="mobi" />
+                          <span>MOBI</span>
+                        </label>
+                        <label class="chip-toggle">
+                          <input type="checkbox" name="excludedFormats" value="azw3" />
+                          <span>AZW3</span>
+                        </label>
+                        <label class="chip-toggle">
+                          <input type="checkbox" name="excludedFormats" value="pdf" />
+                          <span>PDF</span>
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <label class="field">
+                      <span data-i18n="ui.settings.minSeeds">Minimum seeders</span>
+                      <input id="min-seeds" type="number" min="0" step="1" />
+                    </label>
+
+                    <label class="field">
+                      <span data-i18n="ui.settings.maxSizeMB">Maximum size (MB)</span>
+                      <input id="max-size-mb" type="number" min="0" step="1" />
+                    </label>
+
+                    <label class="field">
+                      <span data-i18n="ui.settings.language">Language</span>
+                      <select id="settings-language">
+                        <option value="any" data-i18n="ui.settings.anyLanguage">Any language</option>
+                        <option value="es" data-i18n="ui.settings.spanish">Spanish</option>
+                        <option value="en" data-i18n="ui.settings.english">English</option>
+                      </select>
+                    </label>
+                  </section>
+
+                  <div class="settings-side-stack">
+                    <section class="settings-group">
+                      <h3 data-i18n="ui.settings.downloadTitle">Download behavior</h3>
+
+                      <label class="toggle-field">
+                        <input id="auto-download" type="checkbox" />
+                        <span data-i18n="ui.settings.autoDownload">Auto-download best result after search</span>
+                      </label>
+
+                      <label class="toggle-field">
+                        <input id="only-preferred-format" type="checkbox" />
+                        <span data-i18n="ui.settings.onlyIfPreferredFormat">Only download when it matches the preferred format</span>
+                      </label>
+                    </section>
+
+                    <section class="settings-group">
+                      <h3 data-i18n="ui.settings.calibreTitle">Calibre-Web</h3>
+
+                      <label class="field">
+                        <span data-i18n="ui.settings.defaultShelf">Default destination shelf</span>
+                        <select id="default-shelf">
+                          <option value="" data-i18n="ui.shelf.generalLibrary">General library</option>
+                        </select>
+                      </label>
+
+                      <label class="toggle-field">
+                        <input id="remember-last-shelf" type="checkbox" />
+                        <span data-i18n="ui.settings.rememberLastShelf">Remember last selected shelf</span>
+                      </label>
+                    </section>
+                  </div>
+
+                  <section class="settings-group settings-group-full">
+                    <h3 data-i18n="ui.settings.indexers">Prowlarr indexers</h3>
+                    <p class="field-help" data-i18n="ui.settings.indexersHelp">If none are selected, all available indexers will be used.</p>
+                    <div id="indexer-options" class="checkbox-grid checkbox-grid-compact">
+                      <p class="empty-note" data-i18n="common.loading">Loading...</p>
+                    </div>
+                  </section>
+                </div>
+
+                <div class="actions settings-actions">
+                  <button type="submit" data-i18n="ui.settings.save">Save settings</button>
+                  <button id="reset-settings-button" type="button" class="secondary" data-i18n="ui.settings.reset">Reset defaults</button>
+                </div>
+
+                <p id="settings-status" class="status" role="status" aria-live="polite"></p>
+              </form>
             </section>
           </section>
         </section>

@@ -332,8 +332,8 @@ docker compose up -d --build
 
 ## 🛣️ Roadmap
 
-* [ ] Automatic shelves
-* [ ] Upgrading UI
+* [✅] Automatic shelves
+* [✅] Upgrading UI
 * [ ] Add configurable settings
 * [ ] Notifications
 
