@@ -6,14 +6,58 @@ function asyncHandler(fn) {
   };
 }
 
-function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
+function createApiRouter({
+  prowlarrService,
+  qbittorrentService,
+  jobService,
+  destinationShelves,
+}) {
   const router = express.Router();
 
-  async function startDownload({ title, downloadUrl, protocol, category, savePath }) {
+  function resolveDestinationShelf(destinationId) {
+    if (!destinationId) {
+      return null;
+    }
+
+    return (
+      destinationShelves.options.find((item) => item.id === destinationId) ||
+      null
+    );
+  }
+
+  function validateDestinationShelf(destinationId) {
+    if (!destinationId) {
+      return null;
+    }
+
+    const destinationShelf = resolveDestinationShelf(destinationId);
+
+    if (!destinationShelf) {
+      const error = new Error("The selected destination shelf does not exist");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return destinationShelf;
+  }
+
+  async function startDownload({
+    title,
+    downloadUrl,
+    protocol,
+    category,
+    savePath,
+    destinationId,
+  }) {
+    const destinationShelf = validateDestinationShelf(destinationId);
+
     const job = await jobService.createDownloadJob({
       title,
       downloadUrl,
       protocol,
+      destinationId: destinationShelf?.id || null,
+      destinationLabel: destinationShelf?.label || null,
+      calibreShelf: destinationShelf?.calibreShelf || null,
     });
 
     await jobService.updateJob(job.id, { state: "downloading" });
@@ -22,11 +66,16 @@ function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
       const result = await qbittorrentService.addDownload({
         downloadUrl,
         category,
-        savePath,
+        savePath: destinationShelf?.qbSavePath || savePath,
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
       });
 
       const updated = await jobService.updateJob(job.id, {
         state: "downloading",
+        destinationId: destinationShelf?.id || null,
+        destinationLabel: destinationShelf?.label || null,
+        calibreShelf: destinationShelf?.calibreShelf || null,
       });
 
       return {
@@ -48,7 +97,7 @@ function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
       const query = `${req.query.query || ""}`.trim();
 
       if (!query) {
-        return res.status(400).json({ error: "query es obligatorio" });
+        return res.status(400).json({ error: "Query is required" });
       }
 
       const results = await prowlarrService.search(query);
@@ -59,13 +108,19 @@ function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
   router.post(
     "/download",
     asyncHandler(async (req, res) => {
-      const { title, downloadUrl, protocol = "torrent", category, savePath } =
-        req.body || {};
+      const {
+        title,
+        downloadUrl,
+        protocol = "torrent",
+        category,
+        savePath,
+        destinationId,
+      } = req.body || {};
 
       if (!title || !downloadUrl) {
         return res
           .status(400)
-          .json({ error: "title y downloadUrl son obligatorios" });
+          .json({ error: "Title and download URL are required" });
       }
 
       const started = await startDownload({
@@ -74,10 +129,11 @@ function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
         protocol,
         category,
         savePath,
+        destinationId,
       });
 
       return res.status(202).json({
-        message: "Descarga enviada a qBittorrent",
+        message: "Download sent to qBittorrent",
         job: started.job,
         qbittorrent: started.qbittorrent,
       });
@@ -87,11 +143,11 @@ function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
   router.post(
     "/request",
     asyncHandler(async (req, res) => {
-      const { query, user, category, savePath } = req.body || {};
+      const { query, user, category, savePath, destinationId } = req.body || {};
       const normalizedQuery = `${query || ""}`.trim();
 
       if (!normalizedQuery) {
-        return res.status(400).json({ error: "query es obligatorio" });
+        return res.status(400).json({ error: "Query is required" });
       }
 
       const results = await prowlarrService.search(normalizedQuery);
@@ -107,6 +163,7 @@ function createApiRouter({ prowlarrService, qbittorrentService, jobService }) {
         protocol: best.protocol || "torrent",
         category,
         savePath,
+        destinationId,
       });
 
       return res.status(202).json({

@@ -21,6 +21,38 @@ class QBittorrentService {
     this.loggedIn = false;
   }
 
+  async delay(ms) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  buildTargetContext({ category, savePath, destinationId, destinationLabel }) {
+    return {
+      category: category || this.defaultCategory,
+      savePath: savePath || this.defaultSavePath || null,
+      destinationId: destinationId || null,
+      destinationLabel: destinationLabel || null,
+    };
+  }
+
+  async submitAddTorrent({ finalUrl, category, savePath }) {
+    const params = new URLSearchParams({
+      urls: finalUrl,
+      category,
+    });
+
+    if (savePath) {
+      params.set("savepath", savePath);
+    }
+
+    await this.client.post("/api/v2/torrents/add", params.toString(), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Referer: this.client.defaults.baseURL,
+        Origin: this.client.defaults.baseURL,
+      },
+    });
+  }
+
   async login() {
     if (this.loggedIn) {
       return;
@@ -42,13 +74,25 @@ class QBittorrentService {
     );
 
     this.loggedIn = true;
-    this.logger.info("Sesion iniciada en qBittorrent");
+    this.logger.info("Session started on qBittorrent");
   }
 
-  async addDownload({ downloadUrl, category }) {
+  async addDownload({
+    downloadUrl,
+    category,
+    savePath,
+    destinationId,
+    destinationLabel,
+  }) {
     await this.login();
 
     try {
+      const target = this.buildTargetContext({
+        category,
+        savePath,
+        destinationId,
+        destinationLabel,
+      });
       let finalUrl = downloadUrl;
 
       if (!downloadUrl.startsWith("magnet:")) {
@@ -73,36 +117,82 @@ class QBittorrentService {
       }
 
       if (!finalUrl.startsWith("magnet:")) {
-        throw new Error("No se pudo obtener magnet link válido");
+        throw new Error("Could not obtain a valid magnet link");
       }
 
-      this.logger.info("Enviando magnet a qBittorrent...");
-
-      const params = new URLSearchParams({
-        urls: finalUrl,
-        category: category || this.defaultCategory,
+      this.logger.info("Sending magnet to qBittorrent", {
+        destinationId: target.destinationId,
+        destinationLabel: target.destinationLabel,
+        category: target.category,
+        savePath: target.savePath,
       });
 
-      await this.client.post("/api/v2/torrents/add", params.toString(), {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Referer: this.client.defaults.baseURL,
-          Origin: this.client.defaults.baseURL,
-        },
-      });
+      try {
+        await this.submitAddTorrent({
+          finalUrl,
+          category: target.category,
+          savePath: target.savePath,
+        });
+      } catch (error) {
+        if (error.response?.status === 403 && target.savePath) {
+          this.logger.warn("qBittorrent rejected the path, retrying once", {
+            destinationId: target.destinationId,
+            destinationLabel: target.destinationLabel,
+            category: target.category,
+            savePath: target.savePath,
+            status: error.response.status,
+          });
+
+          await this.delay(1200);
+          await this.login();
+          await this.submitAddTorrent({
+            finalUrl,
+            category: target.category,
+            savePath: target.savePath,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       return {
         accepted: true,
         type: "magnet",
-        category: category || this.defaultCategory,
+        category: target.category,
+        savePath: target.savePath,
+        destinationId: target.destinationId,
+        destinationLabel: target.destinationLabel,
       };
 
     } catch (e) {
-      this.logger.error(
-        "Error añadiendo descarga:",
-        e.response?.data || e.message
-      );
-      throw new Error(e.response?.data || e.message);
+      const target = this.buildTargetContext({
+        category,
+        savePath,
+        destinationId,
+        destinationLabel,
+      });
+      const responseBody =
+        typeof e.response?.data === "string"
+          ? e.response.data
+          : JSON.stringify(e.response?.data || {});
+
+      this.logger.error("Error adding download", {
+        destinationId: target.destinationId,
+        destinationLabel: target.destinationLabel,
+        category: target.category,
+        savePath: target.savePath,
+        status: e.response?.status || null,
+        response: responseBody || null,
+        error: e.message,
+      });
+
+      if (e.response?.status === 403 && target.savePath) {
+        throw new Error(
+          `qBittorrent rejected the path ${target.savePath} for ${target.destinationLabel || target.destinationId || "the selected shelf"}. Make sure it exists and is writable within the qBittorrent container.`,
+        );
+      }
+
+      throw new Error(responseBody || e.message);
     }
   }
 }

@@ -149,6 +149,8 @@ QBITTORRENT_USERNAME=admin
 QBITTORRENT_PASSWORD=your_password
 QBITTORRENT_CATEGORY=books
 QBITTORRENT_SAVE_PATH=/downloads
+FEATURE_DESTINATION_SHELF=false
+DESTINATION_SHELVES=[]
 
 CALIBRE_WEB_BASE_URL=http://calibre-web:8083
 CALIBRE_WEB_USERNAME=admin
@@ -169,9 +171,31 @@ PROCESSED_DIR=/downloads/.imported
 REQUEST_TIMEOUT_MS=30000
 ```
 
----
+Example `DESTINATION_SHELVES` value:
 
-## 🔌 API
+```env
+FEATURE_DESTINATION_SHELF=true
+DESTINATION_SHELVES=[{"id":"maria","label":"Maria","qbSavePath":"/downloads/maria","calibreShelf":"Maria","calibreShelfId":1},{"id":"infantil","label":"Infantil","qbSavePath":"/downloads/infantil","calibreShelf":"Infantil","calibreShelfId":2}]
+```
+
+When this feature is enabled, the frontend shows an `Estanteria de destino` selector and the chosen option is used to:
+
+* keep the qBittorrent category unchanged
+* optionally save the book into a destination-specific download folder
+* preserve that destination in job tracking
+* preferably use a fixed `calibreShelfId` so shelf assignment in Calibre-Web is deterministic
+* upload the book to Calibre-Web first and then assign it to the configured shelf through the Calibre-Web session
+
+Note: `.env.example` currently reflects your local setup style. Before publishing or sharing the repository, make sure it does not contain real credentials or internal-only addresses.
+
+Recommended notes for `Estanteria de destino`:
+
+* `calibreShelfId` is the most reliable option and is recommended when you already know the shelf ids in Calibre-Web.
+* `qbSavePath` may differ from `DOWNLOADS_DIR` as long as both paths refer to the same mounted folder from the perspective of qBittorrent and `bookseerr`.
+* Shelf assignment happens after the book is imported into Calibre-Web, because the upload form itself does not expose shelf selection in many installations.
+* If you use custom `qbSavePath` values such as `/downloads/shelf-1` or `/downloads/shelf-2`, create those folders in the qBittorrent-visible volume in advance and make sure they are writable.
+
+## API
 
 ### `GET /health`
 
@@ -217,7 +241,9 @@ curl -X POST "http://localhost:3000/api/request" \
   }'
 ```
 
----
+### `GET /api/settings`
+
+Returns frontend feature flags and configured destination shelves.
 
 ### `GET /api/jobs`
 
@@ -229,7 +255,11 @@ Returns tracked jobs.
 
 A minimal vanilla JavaScript UI served from `/web`.
 
-Includes:
+* search input
+* optional `Estanteria de destino` selector
+* search results list
+* per-result download button
+* `Download best` action using `/api/request`
 
 * Search input
 * Results list
@@ -302,10 +332,10 @@ docker compose up -d --build
 
 ## 🛣️ Roadmap
 
-* [ ] Multi-user support
 * [ ] Automatic shelves
+* [ ] Upgrading UI
+* [ ] Add configurable settings
 * [ ] Notifications
-* [ ] Better ranking logic
 
 ---
 

@@ -1,5 +1,5 @@
 function errorHandler(error, req, res, next) {
-  req.logger.error("Peticion fallida", {
+  req.logger.error("Request failed", {
     path: req.path,
     method: req.method,
     error: error.message,

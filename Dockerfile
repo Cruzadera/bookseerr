@@ -9,6 +9,7 @@ RUN npm install --omit=dev
 
 COPY src ./src
 COPY web ./web
+COPY locales ./locales
 
 RUN mkdir -p /data
 

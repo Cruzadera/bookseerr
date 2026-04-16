@@ -1,6 +1,7 @@
 const createApp = require("./app");
 const config = require("./config");
 const Logger = require("./lib/logger");
+const { initI18n } = require("./lib/i18n");
 const StateRepository = require("./repositories/state.repository");
 const CalibreWebService = require("./services/calibre-web.service");
 const DownloadQueueService = require("./services/download-queue.service");
@@ -12,6 +13,7 @@ const WatcherService = require("./services/watcher.service");
 
 async function bootstrap() {
   const logger = new Logger(config.app.logLevel);
+  const i18n = await initI18n();
 
   const stateRepository = new StateRepository({
     stateFile: config.paths.stateFile,
@@ -61,10 +63,14 @@ async function bootstrap() {
     prowlarrService,
     qbittorrentService,
     jobService,
+    destinationShelves: config.destinationShelves,
+    uiConfig: {
+      destinationShelves: config.destinationShelves,
+    },
   });
 
   app.listen(config.app.port, () => {
-    logger.info("bookseerr iniciado", {
+    logger.info("bookseerr started", {
       port: config.app.port,
       downloadsDir: config.paths.downloadsDir,
       stateFile: config.paths.stateFile,
@@ -79,7 +85,7 @@ bootstrap().catch((error) => {
     JSON.stringify({
       ts: new Date().toISOString(),
       level: "error",
-      message: "Fallo al iniciar la aplicacion",
+      message: "Failed to start the application",
       error: error.message,
     }),
   );

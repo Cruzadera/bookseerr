@@ -1,0 +1,66 @@
+{
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "loading": "Loading...",
+    "search": "Search",
+    "download": "Download"
+  },
+  "ui": {
+    "pageTitle": "Bookseerr",
+    "manager": "Ebook request manager",
+    "heroHeading": "Search, download, and auto-import books in one place.",
+    "heroPowered": "Powered by Prowlarr, qBittorrent, and Calibre-Web.",
+    "bookTitle": "Book title",
+    "searchPlaceholder": "Search by title or author",
+    "searchButton": "Search",
+    "requestButton": "Request best",
+    "noResults": "No matching books found.",
+    "format": "Format",
+    "seeders": "Seeders",
+    "indexer": "Unknown indexer",
+    "nav": {
+      "home": "Home",
+      "settings": "Settings",
+      "morePages": "More pages"
+    },
+    "shelf": {
+      "destination": "Destination shelf",
+      "generalLibrary": "General library"
+    },
+    "placeholders": {
+      "settings": "Settings",
+      "comingSoon": "Coming soon"
+    },
+    "status": {
+      "searching": "Searching...",
+      "enterTitle": "Enter a book title to search.",
+      "foundResults": "{{count}} result(s) found.",
+      "requesting": "Looking for the best match...",
+      "requestSuccess": "Download started for \"{{title}}\".",
+      "downloadSuccess": "Download started.",
+      "downloadStarting": "Starting download for \"{{title}}\"..."
+    },
+    "alerts": {
+      "downloadStarted": "Download started!",
+      "enterBeforeRequest": "Enter a book title before requesting a download."
+    }
+  },
+  "errors": {
+    "requestFailed": "Request failed",
+    "queryRequired": "Query is required",
+    "titleAndUrlRequired": "Title and download URL are required",
+    "invalidDestinationShelf": "The selected destination shelf does not exist",
+    "noResults": "No results found",
+    "authenticationFailed": "Failed to authenticate with Calibre-Web",
+    "unexpectedError": "Unexpected error",
+    "invalidDestination": "Invalid destination shelf"
+  },
+  "messages": {
+    "sessionStartedQBittorrent": "Session started on qBittorrent",
+    "sessionStartedCalibreWeb": "Session started on Calibre-Web",
+    "downloadSentToQBittorrent": "Download sent to qBittorrent",
+    "failedRequest": "Request failed",
+    "failedToStartApplication": "Failed to start the application"
+  }
+}

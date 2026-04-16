@@ -21,6 +21,32 @@ function createApp(services) {
     });
   });
 
+  app.get("/api/settings", (req, res) => {
+    res.json({
+      features: {
+        destinationShelf: services.uiConfig.destinationShelves.enabled,
+      },
+      destinationShelves: services.uiConfig.destinationShelves.options.map(
+        (item) => ({
+          id: item.id,
+          label: item.label,
+        }),
+      ),
+    });
+  });
+
+  app.get("/locales/:lang/common.json", (req, res) => {
+    const supportedLanguages = new Set(["en", "es-ES"]);
+    const { lang } = req.params;
+
+    if (!supportedLanguages.has(lang)) {
+      return res.status(404).json({ error: "Language not supported" });
+    }
+
+    return res.sendFile(path.join(__dirname, "../locales", lang, "common.json"));
+  });
+
+  app.use("/locales", express.static(path.join(__dirname, "../locales")));
   app.use("/", express.static(path.join(__dirname, "../web")));
 
   app.use(
@@ -29,6 +55,7 @@ function createApp(services) {
       prowlarrService: services.prowlarrService,
       qbittorrentService: services.qbittorrentService,
       jobService: services.jobService,
+      destinationShelves: services.destinationShelves,
     }),
   );
 
