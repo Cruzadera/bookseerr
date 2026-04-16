@@ -4,7 +4,7 @@ const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const createApiRouter = require("./routes/api.routes");
 
-function buildSettingsPayload(services) {
+async function buildSettingsPayload(services) {
   return {
     settings: services.settingsService?.getSettings?.() || {},
     features: {
@@ -16,6 +16,7 @@ function buildSettingsPayload(services) {
         label: item.label,
       }),
     ),
+    availableIndexers: await services.prowlarrService?.listIndexers?.(),
   };
 }
 
@@ -36,15 +37,19 @@ function createApp(services) {
     });
   });
 
-  app.get("/api/settings", (req, res) => {
-    res.json(buildSettingsPayload(services));
+  app.get("/api/settings", async (req, res, next) => {
+    try {
+      res.json(await buildSettingsPayload(services));
+    } catch (error) {
+      return next(error);
+    }
   });
 
   app.post("/api/settings", async (req, res, next) => {
     try {
       const settings = await services.settingsService.updateSettings(req.body || {});
       return res.json({
-        ...buildSettingsPayload(services),
+        ...(await buildSettingsPayload(services)),
         settings,
       });
     } catch (error) {

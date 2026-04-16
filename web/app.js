@@ -18,6 +18,7 @@ let preferredFormatSelect;
 let minSeedsInput;
 let maxSizeInput;
 let settingsLanguageSelect;
+let indexerOptionsContainer;
 let autoDownloadInput;
 let onlyPreferredFormatInput;
 let defaultShelfSelect;
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS = {
   filters: {
     preferredFormat: "epub",
     excludedFormats: ["pdf"],
+    indexers: [],
     minSeeds: 5,
     maxSizeMB: 50,
     language: "any",
@@ -48,6 +50,7 @@ const DEFAULT_SETTINGS = {
 const uiState = {
   destinationShelfEnabled: false,
   destinationShelves: [],
+  availableIndexers: [],
   settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
 };
 
@@ -112,6 +115,13 @@ function normalizeSettings(value = {}) {
             .filter((item) => item && item !== preferredFormat),
         ),
       ],
+      indexers: [
+        ...new Set(
+          (Array.isArray(merged.filters?.indexers) ? merged.filters.indexers : [])
+            .map((item) => `${item || ""}`.trim())
+            .filter(Boolean),
+        ),
+      ],
       minSeeds: Math.max(0, Number(merged.filters?.minSeeds ?? 0) || 0),
       maxSizeMB: Math.max(0, Number(merged.filters?.maxSizeMB ?? 0) || 0),
       language: normalizeLanguage(merged.filters?.language),
@@ -168,6 +178,7 @@ function initializeDOMElements() {
   minSeedsInput = document.getElementById("min-seeds");
   maxSizeInput = document.getElementById("max-size-mb");
   settingsLanguageSelect = document.getElementById("settings-language");
+  indexerOptionsContainer = document.getElementById("indexer-options");
   autoDownloadInput = document.getElementById("auto-download");
   onlyPreferredFormatInput = document.getElementById("only-preferred-format");
   defaultShelfSelect = document.getElementById("default-shelf");
@@ -297,6 +308,31 @@ function applyDestinationShelfPreference() {
   }
 }
 
+function populateIndexerOptions() {
+  if (!indexerOptionsContainer) {
+    return;
+  }
+
+  if (!uiState.availableIndexers.length) {
+    const emptyMsg = i18n
+      ? i18n.t("ui.settings.noIndexers")
+      : "No indexers available right now.";
+    indexerOptionsContainer.innerHTML = `<p class="empty-note">${escapeHtml(emptyMsg)}</p>`;
+    return;
+  }
+
+  indexerOptionsContainer.innerHTML = uiState.availableIndexers
+    .map(
+      (item) => `
+        <label class="chip-toggle">
+          <input type="checkbox" name="indexers" value="${escapeHtml(item)}" />
+          <span>${escapeHtml(item)}</span>
+        </label>
+      `,
+    )
+    .join("");
+}
+
 function populateSettingsForm() {
   if (!settingsForm) {
     return;
@@ -316,6 +352,11 @@ function populateSettingsForm() {
     input.checked = excludedFormats.has(input.value);
   });
 
+  const selectedIndexers = new Set(settings.filters.indexers || []);
+  document.querySelectorAll('input[name="indexers"]').forEach((input) => {
+    input.checked = selectedIndexers.has(input.value);
+  });
+
   if (defaultShelfSelect) {
     defaultShelfSelect.value = settings.calibre.defaultShelf || "";
   }
@@ -326,10 +367,14 @@ function applyLoadedSettings(data) {
   uiState.destinationShelves = Array.isArray(data.destinationShelves)
     ? data.destinationShelves
     : [];
+  uiState.availableIndexers = Array.isArray(data.availableIndexers)
+    ? data.availableIndexers
+    : [];
   uiState.destinationShelfEnabled =
     Boolean(data.features?.destinationShelf) && uiState.destinationShelves.length > 0;
 
   populateDestinationShelfOptions();
+  populateIndexerOptions();
   populateSettingsForm();
 }
 
@@ -355,6 +400,9 @@ function collectSettingsFormValue() {
     filters: {
       preferredFormat,
       excludedFormats,
+      indexers: Array.from(document.querySelectorAll('input[name="indexers"]:checked')).map(
+        (input) => input.value,
+      ),
       minSeeds: Number(minSeedsInput.value || 0),
       maxSizeMB: Number(maxSizeInput.value || 0),
       language: settingsLanguageSelect.value || "any",

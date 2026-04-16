@@ -3,6 +3,7 @@ const axios = require("axios");
 const DEFAULT_FILTERS = {
   preferredFormat: "epub",
   excludedFormats: ["pdf"],
+  indexers: [],
   minSeeds: 5,
   maxSizeMB: 50,
   language: "any",
@@ -18,6 +19,10 @@ function toSizeMB(size) {
   return Number((numeric / 1024 / 1024).toFixed(2));
 }
 
+function normalizeIndexerName(value) {
+  return `${value || ""}`.trim().toLowerCase();
+}
+
 class ProwlarrService {
   constructor({ config, logger }) {
     this.logger = logger;
@@ -28,6 +33,40 @@ class ProwlarrService {
         "X-Api-Key": config.apiKey,
       },
     });
+    this.indexerCache = {
+      fetchedAt: 0,
+      items: [],
+    };
+  }
+
+  async listIndexers() {
+    const now = Date.now();
+
+    if (now - this.indexerCache.fetchedAt < 5 * 60 * 1000 && this.indexerCache.items.length) {
+      return [...this.indexerCache.items];
+    }
+
+    try {
+      const response = await this.client.get("/api/v1/indexer");
+      const items = [...new Set(
+        (response.data || [])
+          .filter((item) => item?.enable !== false)
+          .map((item) => `${item.name || ""}`.trim())
+          .filter(Boolean),
+      )].sort((a, b) => a.localeCompare(b));
+
+      this.indexerCache = {
+        fetchedAt: now,
+        items,
+      };
+
+      return [...items];
+    } catch (error) {
+      this.logger?.warn?.("Could not load Prowlarr indexers", {
+        error: error.message,
+      });
+      return [];
+    }
   }
 
   normalizeFilters(filters = {}) {
@@ -51,6 +90,11 @@ class ProwlarrService {
           : DEFAULT_FILTERS.excludedFormats
         )
           .map((item) => `${item || ""}`.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+      indexers: new Set(
+        (Array.isArray(filters.indexers) ? filters.indexers : DEFAULT_FILTERS.indexers)
+          .map((item) => normalizeIndexerName(item))
           .filter(Boolean),
       ),
       minSeeds: Math.max(0, Number(filters.minSeeds ?? DEFAULT_FILTERS.minSeeds) || 0),
@@ -80,7 +124,7 @@ class ProwlarrService {
   guessLanguage(item = {}) {
     const normalized = `${item.title || ""} ${item.indexer || ""}`.toLowerCase();
 
-    if (/(español|espanol|spanish|castellano|epublibre)/.test(normalized)) {
+    if (/(español|espanol|spanish|castellano)/.test(normalized)) {
       return "es";
     }
 
@@ -100,6 +144,13 @@ class ProwlarrService {
       return false;
     }
 
+    if (
+      filters.indexers.size > 0 &&
+      !filters.indexers.has(normalizeIndexerName(item.indexer))
+    ) {
+      return false;
+    }
+
     if ((item.seeders || 0) < filters.minSeeds) {
       return false;
     }
@@ -108,7 +159,11 @@ class ProwlarrService {
       return false;
     }
 
-    if (filters.language !== "any" && item.language !== filters.language) {
+    if (
+      filters.language !== "any" &&
+      item.language !== "any" &&
+      item.language !== filters.language
+    ) {
       return false;
     }
 
@@ -117,8 +172,6 @@ class ProwlarrService {
 
   scoreResult(item, filters) {
     let score = 0;
-    const isEpublibre =
-      item.indexer && item.indexer.toLowerCase().includes("epublibre");
 
     if (filters.preferredFormat !== "any" && item.format === filters.preferredFormat) {
       score += 120;
@@ -128,10 +181,6 @@ class ProwlarrService {
     if (item.format === "azw3") score += filters.preferredFormat === "azw3" ? 80 : 40;
     if (item.format === "mobi") score += filters.preferredFormat === "mobi" ? 60 : 20;
     if (item.format === "pdf") score -= 60;
-
-    if (isEpublibre) {
-      score += 25;
-    }
 
     if (filters.language !== "any" && item.language === filters.language) {
       score += 20;
@@ -169,8 +218,49 @@ class ProwlarrService {
       };
     });
 
-    const finalResults = mapped
-      .filter((item) => this.matchesFilters(item, activeFilters))
+    const fallbackStages = [
+      { name: "strict", filters: activeFilters },
+      {
+        name: "relaxed-language",
+        filters:
+          activeFilters.language !== "any"
+            ? { ...activeFilters, language: "any" }
+            : activeFilters,
+      },
+      {
+        name: "relaxed-seeds",
+        filters:
+          activeFilters.minSeeds > 0
+            ? { ...activeFilters, language: "any", minSeeds: 0 }
+            : activeFilters,
+      },
+      {
+        name: "relaxed-size",
+        filters:
+          activeFilters.maxSizeMB > 0
+            ? { ...activeFilters, language: "any", minSeeds: 0, maxSizeMB: 0 }
+            : activeFilters,
+      },
+    ];
+
+    let selectedStage = "strict";
+    let candidates = [];
+
+    for (const stage of fallbackStages) {
+      candidates = mapped.filter((item) => this.matchesFilters(item, stage.filters));
+
+      if (candidates.length > 0) {
+        selectedStage = stage.name;
+        break;
+      }
+    }
+
+    if (!candidates.length) {
+      candidates = mapped.filter((item) => item.downloadUrl);
+      selectedStage = "downloadable-only";
+    }
+
+    const finalResults = candidates
       .sort(
         (a, b) =>
           b.score - a.score ||
@@ -183,9 +273,11 @@ class ProwlarrService {
       query,
       total: mapped.length,
       final: finalResults.length,
+      stage: selectedStage,
       filters: {
         ...activeFilters,
         excludedFormats: [...activeFilters.excludedFormats],
+        indexers: [...activeFilters.indexers],
       },
     });
 

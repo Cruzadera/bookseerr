@@ -5,6 +5,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   filters: {
     preferredFormat: "epub",
     excludedFormats: ["pdf"],
+    indexers: [],
     minSeeds: 5,
     maxSizeMB: 50,
     language: "any",
@@ -80,6 +81,14 @@ function normalizeNumber(value, fallback) {
 function normalizeOptionalString(value) {
   const normalized = `${value || ""}`.trim();
   return normalized || null;
+}
+
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(value.map((item) => `${item || ""}`.trim()).filter(Boolean))];
 }
 
 class SettingsService {
@@ -164,6 +173,7 @@ class SettingsService {
       filters: {
         preferredFormat,
         excludedFormats,
+        indexers: normalizeStringArray(merged.filters?.indexers),
         minSeeds: normalizeNumber(
           merged.filters?.minSeeds,
           DEFAULT_SETTINGS.filters.minSeeds,
