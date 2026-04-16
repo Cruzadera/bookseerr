@@ -23,6 +23,44 @@ function normalizeIndexerName(value) {
   return `${value || ""}`.trim().toLowerCase();
 }
 
+function pickFirstString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return "";
+}
+
+function extractAuthor(item = {}) {
+  return pickFirstString(
+    item.author,
+    item.authorName,
+    item.bookAuthor,
+    item.artist,
+    item.creator,
+    item?.movieInfo?.author,
+    item?.movieInfo?.authorName,
+  );
+}
+
+function extractCoverUrl(item = {}) {
+  const imageCandidate =
+    Array.isArray(item.images) && item.images.length
+      ? item.images.find((image) => typeof image?.url === "string" && image.url.trim())
+      : null;
+
+  return pickFirstString(
+    item.coverUrl,
+    item.posterUrl,
+    item.poster,
+    item.image,
+    item.grabImage,
+    imageCandidate?.url,
+  );
+}
+
 class ProwlarrService {
   constructor({ config, logger }) {
     this.logger = logger;
@@ -200,6 +238,8 @@ class ProwlarrService {
     const mapped = (response.data || []).map((item) => {
       const mappedItem = {
         title: item.title,
+        author: extractAuthor(item),
+        coverUrl: extractCoverUrl(item),
         size: item.size,
         sizeMB: toSizeMB(item.size),
         indexer: item.indexer,

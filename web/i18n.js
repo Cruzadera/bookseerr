@@ -23,6 +23,8 @@ const fallbackTranslations = {
       format: 'Format',
       seeders: 'Seeders',
       size: 'Size',
+      bestMatch: 'Best match',
+      unknownAuthor: 'Unknown author',
       indexer: 'Unknown indexer',
       nav: {
         home: 'Home',
@@ -116,6 +118,8 @@ const fallbackTranslations = {
       format: 'Formato',
       seeders: 'Semillas',
       size: 'Tamaño',
+      bestMatch: 'Mejor resultado',
+      unknownAuthor: 'Autor desconocido',
       indexer: 'Indexador desconocido',
       nav: {
         home: 'Inicio',
