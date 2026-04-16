@@ -35,6 +35,18 @@ function createApp(services) {
     });
   });
 
+  app.get("/locales/:lang/common.json", (req, res) => {
+    const supportedLanguages = new Set(["en", "es-ES"]);
+    const { lang } = req.params;
+
+    if (!supportedLanguages.has(lang)) {
+      return res.status(404).json({ error: "Language not supported" });
+    }
+
+    return res.sendFile(path.join(__dirname, "../locales", lang, "common.json"));
+  });
+
+  app.use("/locales", express.static(path.join(__dirname, "../locales")));
   app.use("/", express.static(path.join(__dirname, "../web")));
 
   app.use(

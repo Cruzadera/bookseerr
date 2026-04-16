@@ -19,6 +19,19 @@
     "format": "Formato",
     "seeders": "Semillas",
     "indexer": "Indexador desconocido",
+    "nav": {
+      "home": "Inicio",
+      "settings": "Configuración",
+      "morePages": "Más páginas"
+    },
+    "shelf": {
+      "destination": "Estantería de destino",
+      "generalLibrary": "Biblioteca general"
+    },
+    "placeholders": {
+      "settings": "Configuración",
+      "comingSoon": "Próximamente"
+    },
     "status": {
       "searching": "Buscando...",
       "enterTitle": "Introduce un título de libro para buscar.",

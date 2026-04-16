@@ -1,18 +1,18 @@
 // Global i18n instance
 let i18n = null;
 
-// DOM Elements
-const searchInput = document.getElementById("search");
-const searchButton = document.getElementById("search-button");
-const requestButton = document.getElementById("request-button");
-const resultsContainer = document.getElementById("results");
-const statusElement = document.getElementById("status");
-const destinationShelfField = document.getElementById("destination-shelf-field");
-const destinationShelfSelect = document.getElementById("destination-shelf");
-const navLinks = Array.from(document.querySelectorAll(".nav-link"));
-const pageViews = Array.from(document.querySelectorAll("[data-page-view]"));
-const sidebar = document.querySelector(".sidebar");
-const sidebarToggle = document.getElementById("sidebar-toggle");
+// DOM Elements - will be initialized after DOM is ready
+let searchInput;
+let searchButton;
+let requestButton;
+let resultsContainer;
+let statusElement;
+let destinationShelfField;
+let destinationShelfSelect;
+let navLinks;
+let pageViews;
+let sidebar;
+let sidebarToggle;
 
 const uiState = {
   destinationShelfEnabled: false,
@@ -20,17 +20,47 @@ const uiState = {
 
 // Helper function to translate UI elements with data-i18n attributes
 function translateUI() {
-  if (!i18n) return;
+  console.log('[app] translateUI called, i18n:', i18n ? 'ready' : 'not ready');
+  
+  if (!i18n) {
+    console.warn('[app] i18n not initialized');
+    return;
+  }
 
-  document.querySelectorAll("[data-i18n]").forEach((element) => {
+  const elements = document.querySelectorAll("[data-i18n]");
+  console.log('[app] Found', elements.length, 'elements with data-i18n');
+
+  elements.forEach((element) => {
     const key = element.getAttribute("data-i18n");
-    element.textContent = i18n.t(key);
+    const translated = i18n.t(key);
+    console.log('[app] Translating:', key, '→', translated);
+    element.textContent = translated;
   });
 
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+  const placeholders = document.querySelectorAll("[data-i18n-placeholder]");
+  console.log('[app] Found', placeholders.length, 'elements with data-i18n-placeholder');
+
+  placeholders.forEach((element) => {
     const key = element.getAttribute("data-i18n-placeholder");
-    element.placeholder = i18n.t(key);
+    const translated = i18n.t(key);
+    console.log('[app] Translating placeholder:', key, '→', translated);
+    element.placeholder = translated;
   });
+}
+
+// Initialize DOM references - call after DOM is ready
+function initializeDOMElements() {
+  searchInput = document.getElementById("search");
+  searchButton = document.getElementById("search-button");
+  requestButton = document.getElementById("request-button");
+  resultsContainer = document.getElementById("results");
+  statusElement = document.getElementById("status");
+  destinationShelfField = document.getElementById("destination-shelf-field");
+  destinationShelfSelect = document.getElementById("destination-shelf");
+  navLinks = Array.from(document.querySelectorAll(".nav-link"));
+  pageViews = Array.from(document.querySelectorAll("[data-page-view]"));
+  sidebar = document.querySelector(".sidebar");
+  sidebarToggle = document.getElementById("sidebar-toggle");
 }
 
 function setActivePage(page) {
@@ -98,7 +128,7 @@ async function loadSettings() {
       return;
     }
 
-    const defaultLabel = i18n ? i18n.t("common.error") : "General library";
+    const defaultLabel = i18n ? i18n.t("ui.shelf.generalLibrary") : "General library";
     destinationShelfSelect.innerHTML = [
       `<option value="">${defaultLabel}</option>`,
       ...destinationShelves.map(
@@ -251,53 +281,33 @@ async function requestBook() {
   }
 }
 
-// Language switcher
-function createLanguageSwitcher() {
-  // Check if switcher already exists
-  if (document.getElementById("language-switcher")) {
-    return;
-  }
-
-  const eyebrow = document.querySelector(".eyebrow");
-  if (!eyebrow || !eyebrow.parentElement) {
-    return;
-  }
-
-  const brandCopy = eyebrow.parentElement;
-  const switcher = document.createElement("div");
-  switcher.id = "language-switcher";
-  switcher.className = "language-switcher";
-  switcher.innerHTML = `
-    <select id="language-select" aria-label="Language">
-      <option value="en">English</option>
-      <option value="es-ES">Español</option>
-    </select>
-  `;
-
-  brandCopy.appendChild(switcher);
-
-  const select = document.getElementById("language-select");
-  select.value = i18n.getLanguage();
-  select.addEventListener("change", (e) => {
-    const lang = e.target.value;
-    i18n.setLanguage(lang);
-    translateUI();
-  });
-}
-
 // Initialize app
 (async () => {
+  console.log('[app] Initialization started');
+  
   try {
+    // Initialize i18n first
+    console.log('[app] Calling window.initI18n()');
     i18n = await window.initI18n();
+    console.log('[app] i18n initialized with language:', i18n.getLanguage());
+    
+    // Apply translations to UI elements
+    console.log('[app] Calling translateUI()');
     translateUI();
-    createLanguageSwitcher();
+    
+    // Initialize DOM element references
+    console.log('[app] Initializing DOM elements');
+    initializeDOMElements();
+    console.log('[app] DOM elements initialized');
   } catch (error) {
-    console.error("Failed to initialize i18n:", error);
+    console.error("[app] Failed to initialize i18n:", error);
   }
 
+  console.log('[app] Loading settings');
   loadSettings();
   setActivePage("home");
 
+  console.log('[app] Adding event listeners');
   searchButton.addEventListener("click", search);
   if (requestButton) {
     requestButton.addEventListener("click", requestBook);
@@ -335,4 +345,6 @@ function createLanguageSwitcher() {
       setSidebarCollapsed(!isCollapsed);
     });
   }
+  
+  console.log('[app] Initialization complete');
 })();

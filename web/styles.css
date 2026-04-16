@@ -531,39 +531,3 @@ button.secondary:hover {
     width: 100%;
   }
 }
-
-/* Language Switcher Styles */
-.language-switcher {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 247, 239, 0.15);
-}
-
-.language-switcher select {
-  width: 100%;
-  padding: 0.5rem;
-  background-color: rgba(255, 248, 243, 0.1);
-  color: var(--sidebar-text);
-  border: 1px solid rgba(255, 247, 239, 0.2);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.language-switcher select:hover {
-  background-color: rgba(255, 248, 243, 0.15);
-  border-color: rgba(255, 247, 239, 0.4);
-}
-
-.language-switcher select:focus {
-  outline: none;
-  background-color: rgba(255, 248, 243, 0.2);
-  border-color: rgba(255, 247, 239, 0.6);
-  box-shadow: 0 0 0 2px rgba(162, 75, 42, 0.2);
-}
-
-.language-switcher select option {
-  background-color: #2f241d;
-  color: #fff7ef;
-}

@@ -19,6 +19,19 @@
     "format": "Format",
     "seeders": "Seeders",
     "indexer": "Unknown indexer",
+    "nav": {
+      "home": "Home",
+      "settings": "Settings",
+      "morePages": "More pages"
+    },
+    "shelf": {
+      "destination": "Destination shelf",
+      "generalLibrary": "General library"
+    },
+    "placeholders": {
+      "settings": "Settings",
+      "comingSoon": "Coming soon"
+    },
     "status": {
       "searching": "Searching...",
       "enterTitle": "Enter a book title to search.",
