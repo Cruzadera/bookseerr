@@ -1,0 +1,66 @@
+{
+  "common": {
+    "error": "Error",
+    "success": "Éxito",
+    "loading": "Cargando...",
+    "search": "Buscar",
+    "download": "Descargar"
+  },
+  "ui": {
+    "pageTitle": "Bookseerr",
+    "manager": "Gestor de solicitudes de ebooks",
+    "heroHeading": "Busca, descarga e importa libros automáticamente en un mismo lugar.",
+    "heroPowered": "Impulsado por Prowlarr, qBittorrent y Calibre-Web.",
+    "bookTitle": "Título del libro",
+    "searchPlaceholder": "Busca por título o autor",
+    "searchButton": "Buscar",
+    "requestButton": "Solicitar mejor",
+    "noResults": "No se encontraron libros coincidentes.",
+    "format": "Formato",
+    "seeders": "Semillas",
+    "indexer": "Indexador desconocido",
+    "nav": {
+      "home": "Inicio",
+      "settings": "Configuración",
+      "morePages": "Más páginas"
+    },
+    "shelf": {
+      "destination": "Estantería de destino",
+      "generalLibrary": "Biblioteca general"
+    },
+    "placeholders": {
+      "settings": "Configuración",
+      "comingSoon": "Próximamente"
+    },
+    "status": {
+      "searching": "Buscando...",
+      "enterTitle": "Introduce un título de libro para buscar.",
+      "foundResults": "Se encontraron {{count}} resultado(s).",
+      "requesting": "Buscando la mejor coincidencia...",
+      "requestSuccess": "Descarga iniciada para \"{{title}}\".",
+      "downloadSuccess": "Descarga iniciada.",
+      "downloadStarting": "Iniciando descarga de \"{{title}}\"..."
+    },
+    "alerts": {
+      "downloadStarted": "¡Descarga iniciada!",
+      "enterBeforeRequest": "Introduce un título de libro antes de solicitar una descarga."
+    }
+  },
+  "errors": {
+    "requestFailed": "La solicitud falló",
+    "queryRequired": "La consulta es obligatoria",
+    "titleAndUrlRequired": "El título y la URL de descarga son obligatorios",
+    "invalidDestinationShelf": "La estantería de destino seleccionada no existe",
+    "noResults": "No se encontraron resultados",
+    "authenticationFailed": "Falló la autenticación en Calibre-Web",
+    "unexpectedError": "Error inesperado",
+    "invalidDestination": "Estantería de destino no válida"
+  },
+  "messages": {
+    "sessionStartedQBittorrent": "Sesión iniciada en qBittorrent",
+    "sessionStartedCalibreWeb": "Sesión iniciada en Calibre-Web",
+    "downloadSentToQBittorrent": "Descarga enviada a qBittorrent",
+    "failedRequest": "Solicitud fallida",
+    "failedToStartApplication": "Error al iniciar la aplicación"
+  }
+}

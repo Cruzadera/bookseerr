@@ -33,7 +33,7 @@ function createApiRouter({
     const destinationShelf = resolveDestinationShelf(destinationId);
 
     if (!destinationShelf) {
-      const error = new Error("La estanteria de destino seleccionada no existe");
+      const error = new Error("The selected destination shelf does not exist");
       error.statusCode = 400;
       throw error;
     }
@@ -97,7 +97,7 @@ function createApiRouter({
       const query = `${req.query.query || ""}`.trim();
 
       if (!query) {
-        return res.status(400).json({ error: "query es obligatorio" });
+        return res.status(400).json({ error: "Query is required" });
       }
 
       const results = await prowlarrService.search(query);
@@ -120,7 +120,7 @@ function createApiRouter({
       if (!title || !downloadUrl) {
         return res
           .status(400)
-          .json({ error: "title y downloadUrl son obligatorios" });
+          .json({ error: "Title and download URL are required" });
       }
 
       const started = await startDownload({
@@ -133,7 +133,7 @@ function createApiRouter({
       });
 
       return res.status(202).json({
-        message: "Descarga enviada a qBittorrent",
+        message: "Download sent to qBittorrent",
         job: started.job,
         qbittorrent: started.qbittorrent,
       });
@@ -147,7 +147,7 @@ function createApiRouter({
       const normalizedQuery = `${query || ""}`.trim();
 
       if (!normalizedQuery) {
-        return res.status(400).json({ error: "query es obligatorio" });
+        return res.status(400).json({ error: "Query is required" });
       }
 
       const results = await prowlarrService.search(normalizedQuery);

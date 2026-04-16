@@ -9,45 +9,108 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero">
-        <p class="eyebrow">bookseerr</p>
-        <h1>Search, download, and auto-import books in one place.</h1>
-        <p class="subtitle">
-          Powered by Prowlarr, qBittorrent, and Calibre-Web.
-        </p>
-      </section>
+      <div class="layout-shell">
+        <aside class="sidebar">
+          <div class="brand-block">
+            <button
+              type="button"
+              class="brand-mark"
+              id="sidebar-toggle"
+              aria-label="Collapse sidebar"
+              aria-pressed="false"
+            >
+              B
+            </button>
+            <div class="brand-copy">
+              <p class="eyebrow" data-i18n="ui.manager">Ebook request manager</p>
+            </div>
+          </div>
 
-      <section class="panel">
-        <div class="search-row">
-          <label class="field">
-            <span>Book title</span>
-            <input
-              id="search"
-              type="text"
-              placeholder="Search by title or author"
-              autocomplete="off"
-            />
-          </label>
-          <label id="destination-shelf-field" class="field field-compact hidden">
-            <span>Estanteria de destino</span>
-            <select id="destination-shelf">
-              <option value="">Biblioteca general</option>
-            </select>
-          </label>
-          <div class="actions">
-            <button id="search-button" type="button">Search</button>
-            <button id="request-button" type="button" class="secondary">
-              Download best
+          <nav class="sidebar-nav" aria-label="Primary">
+            <button
+              type="button"
+              class="nav-link active"
+              data-page="home"
+              aria-current="page"
+            >
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" />
+                </svg>
+              </span>
+              <span class="nav-text" data-i18n="ui.nav.home">Home</span>
+            </button>
+            <button type="button" class="nav-link" data-page="settings">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="m19.4 13 .1-1-.1-1 2-1.6-2-3.4-2.4 1a7.9 7.9 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.9 7.9 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6-.1 1 .1 1-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" />
+                </svg>
+              </span>
+              <span class="nav-text" data-i18n="ui.nav.settings">Settings</span>
+            </button>
+          </nav>
+
+          <div class="sidebar-footer">
+            <button type="button" class="nav-link nav-link-muted" disabled>
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-3-4 3-4-3-4 3V6a2 2 0 0 1 2-2Z" />
+                </svg>
+              </span>
+              <span class="nav-text" data-i18n="ui.nav.morePages">More pages</span>
             </button>
           </div>
-        </div>
+        </aside>
 
-        <p id="status" class="status" role="status" aria-live="polite"></p>
+        <section class="page-shell">
+          <section class="page-view" data-page-view="home">
+            <section class="hero">
+              <h1 class="hero-title">Bookseerr</h1>
+              <p class="hero-subtitle" data-i18n="ui.heroHeading">
+                Search, download, and auto-import books in one place.
+              </p>
+            </section>
 
-        <div id="results" class="results"></div>
-      </section>
+            <section class="panel">
+              <div class="search-row">
+                <label class="field">
+                  <span data-i18n="ui.bookTitle">Book title</span>
+                  <input
+                    id="search"
+                    type="text"
+                    placeholder="Search by title or author"
+                    data-i18n-placeholder="ui.searchPlaceholder"
+                    autocomplete="off"
+                  />
+                </label>
+                <label id="destination-shelf-field" class="field field-compact hidden">
+                  <span data-i18n="ui.shelf.destination">Destination shelf</span>
+                  <select id="destination-shelf">
+                    <option value="" data-i18n="ui.shelf.generalLibrary">General library</option>
+                  </select>
+                </label>
+                <div class="actions">
+                  <button id="search-button" type="button" data-i18n="ui.searchButton">Search</button>
+                </div>
+              </div>
+
+              <p id="status" class="status" role="status" aria-live="polite"></p>
+
+              <div id="results" class="results"></div>
+            </section>
+          </section>
+
+          <section class="page-view hidden" data-page-view="settings">
+            <section class="placeholder-panel">
+              <p class="placeholder-label" data-i18n="ui.placeholders.settings">Settings</p>
+              <h2 data-i18n="ui.placeholders.comingSoon">Coming soon</h2>
+            </section>
+          </section>
+        </section>
+      </div>
     </main>
 
-    <script src="/app.js" defer></script>
+    <script src="/i18n.js"></script>
+    <script src="/app.js"></script>
   </body>
 </html>

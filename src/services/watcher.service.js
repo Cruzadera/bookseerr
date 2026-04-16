@@ -14,7 +14,7 @@ class WatcherService {
 
   start() {
     if (!this.config.watcher.enabled) {
-      this.logger.info("Watcher deshabilitado por configuracion");
+      this.logger.info("Watcher disabled by configuration");
       return;
     }
 
@@ -31,10 +31,10 @@ class WatcherService {
     this.watcher.on("add", (filePath) => this.schedule(filePath));
     this.watcher.on("change", (filePath) => this.schedule(filePath));
     this.watcher.on("error", (error) => {
-      this.logger.error("Error en watcher", { error: error.message });
+      this.logger.error("Error in watcher", { error: error.message });
     });
 
-    this.logger.info("Watcher iniciado", {
+    this.logger.info("Watcher started", {
       directory: this.config.paths.downloadsDir,
       extensions: this.config.watcher.extensions,
     });
@@ -50,11 +50,11 @@ class WatcherService {
     const timeout = setTimeout(() => {
       this.scheduled.delete(filePath);
       this.queueService.enqueue(async () => {
-        this.logger.info("Procesando libro detectado", { filePath });
+        this.logger.info("Processing detected book", { filePath });
         try {
           await this.importService.importFile(filePath);
         } catch (error) {
-          this.logger.error("Error importando libro", {
+          this.logger.error("Error importing book", {
             filePath,
             error: error.message,
           });

@@ -8,7 +8,7 @@ class DownloadQueueService {
   enqueue(task) {
     this.queue.push(task);
     this.drain().catch((error) => {
-      this.logger.error("Fallo en cola de importacion", {
+      this.logger.error("Error in import queue", {
         error: error.message,
       });
     });

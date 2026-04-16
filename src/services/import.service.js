@@ -77,7 +77,7 @@ class ImportService {
 
       const destinationShelf = this.resolveDestinationShelf(filePath);
 
-      this.logger.info("Resolviendo estanteria de destino", {
+      this.logger.info("Resolving destination shelf", {
         filePath,
         destinationId: destinationShelf?.id || null,
         watchPaths: destinationShelf?.watchPaths || [],
