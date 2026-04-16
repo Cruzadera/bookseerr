@@ -4,6 +4,22 @@ const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const createApiRouter = require("./routes/api.routes");
 
+async function buildSettingsPayload(services) {
+  return {
+    settings: services.settingsService?.getSettings?.() || {},
+    features: {
+      destinationShelf: services.uiConfig.destinationShelves.enabled,
+    },
+    destinationShelves: services.uiConfig.destinationShelves.options.map(
+      (item) => ({
+        id: item.id,
+        label: item.label,
+      }),
+    ),
+    availableIndexers: await services.prowlarrService?.listIndexers?.(),
+  };
+}
+
 function createApp(services) {
   const app = express();
 
@@ -21,18 +37,24 @@ function createApp(services) {
     });
   });
 
-  app.get("/api/settings", (req, res) => {
-    res.json({
-      features: {
-        destinationShelf: services.uiConfig.destinationShelves.enabled,
-      },
-      destinationShelves: services.uiConfig.destinationShelves.options.map(
-        (item) => ({
-          id: item.id,
-          label: item.label,
-        }),
-      ),
-    });
+  app.get("/api/settings", async (req, res, next) => {
+    try {
+      res.json(await buildSettingsPayload(services));
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/settings", async (req, res, next) => {
+    try {
+      const settings = await services.settingsService.updateSettings(req.body || {});
+      return res.json({
+        ...(await buildSettingsPayload(services)),
+        settings,
+      });
+    } catch (error) {
+      return next(error);
+    }
   });
 
   app.get("/locales/:lang/common.json", (req, res) => {
@@ -56,6 +78,7 @@ function createApp(services) {
       qbittorrentService: services.qbittorrentService,
       jobService: services.jobService,
       destinationShelves: services.destinationShelves,
+      settingsService: services.settingsService,
     }),
   );
 

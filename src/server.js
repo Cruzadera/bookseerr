@@ -9,17 +9,24 @@ const ImportService = require("./services/import.service");
 const JobService = require("./services/job.service");
 const ProwlarrService = require("./services/prowlarr.service");
 const QBittorrentService = require("./services/qbittorrent.service");
+const { SettingsService } = require("./services/settings.service");
 const WatcherService = require("./services/watcher.service");
 
 async function bootstrap() {
   const logger = new Logger(config.app.logLevel);
-  const i18n = await initI18n();
+  await initI18n();
 
   const stateRepository = new StateRepository({
     stateFile: config.paths.stateFile,
     logger,
   });
   await stateRepository.init();
+
+  const settingsService = new SettingsService({
+    settingsFile: config.paths.settingsFile,
+    logger,
+  });
+  await settingsService.init();
 
   const jobService = new JobService({ stateRepository });
   const prowlarrService = new ProwlarrService({
@@ -64,6 +71,7 @@ async function bootstrap() {
     qbittorrentService,
     jobService,
     destinationShelves: config.destinationShelves,
+    settingsService,
     uiConfig: {
       destinationShelves: config.destinationShelves,
     },
@@ -73,7 +81,8 @@ async function bootstrap() {
     logger.info("bookseerr started", {
       port: config.app.port,
       downloadsDir: config.paths.downloadsDir,
-      stateFile: config.paths.stateFile,
+      stateFile: stateRepository.stateFile,
+      settingsFile: settingsService.settingsFile,
     });
   });
 

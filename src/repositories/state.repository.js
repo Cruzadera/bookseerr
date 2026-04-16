@@ -13,8 +13,25 @@ class StateRepository {
     this.state = structuredClone(DEFAULT_STATE);
   }
 
+  async ensureStoragePath() {
+    try {
+      await fs.mkdir(path.dirname(this.stateFile), { recursive: true });
+    } catch (error) {
+      if (error.code !== "EACCES" && error.code !== "EPERM") {
+        throw error;
+      }
+
+      const fallbackDir = path.join(process.cwd(), "data");
+      this.stateFile = path.join(fallbackDir, path.basename(this.stateFile));
+      await fs.mkdir(path.dirname(this.stateFile), { recursive: true });
+      this.logger?.warn?.("state file path is not writable, using local fallback", {
+        stateFile: this.stateFile,
+      });
+    }
+  }
+
   async init() {
-    await fs.mkdir(path.dirname(this.stateFile), { recursive: true });
+    await this.ensureStoragePath();
 
     try {
       const raw = await fs.readFile(this.stateFile, "utf8");

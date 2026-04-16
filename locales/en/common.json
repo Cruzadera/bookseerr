@@ -18,6 +18,7 @@
     "noResults": "No matching books found.",
     "format": "Format",
     "seeders": "Seeders",
+    "size": "Size",
     "indexer": "Unknown indexer",
     "nav": {
       "home": "Home",
@@ -28,9 +29,42 @@
       "destination": "Destination shelf",
       "generalLibrary": "General library"
     },
+    "quickFilters": {
+      "title": "Quick filters",
+      "onlyEpub": "Only EPUB",
+      "spanishOnly": "Spanish only",
+      "under20MB": "< 20 MB"
+    },
     "placeholders": {
       "settings": "Settings",
       "comingSoon": "Coming soon"
+    },
+    "settings": {
+      "title": "Search and download preferences",
+      "description": "Adjust ranking, limits, and Calibre shelf behavior.",
+      "filtersTitle": "Search filters",
+      "downloadTitle": "Download behavior",
+      "calibreTitle": "Calibre-Web",
+      "preferredFormat": "Preferred format",
+      "excludedFormats": "Excluded formats",
+      "minSeeds": "Minimum seeders",
+      "maxSizeMB": "Maximum size (MB)",
+      "language": "Language",
+      "indexers": "Prowlarr indexers",
+      "indexersHelp": "If none are selected, all available indexers will be used.",
+      "noIndexers": "No indexers available right now.",
+      "autoDownload": "Auto-download best result after search",
+      "onlyIfPreferredFormat": "Only download when it matches the preferred format",
+      "defaultShelf": "Default destination shelf",
+      "rememberLastShelf": "Remember last selected shelf",
+      "save": "Save settings",
+      "reset": "Reset defaults",
+      "saved": "Settings saved.",
+      "defaultsRestored": "Defaults restored in the form.",
+      "anyFormat": "Any format",
+      "anyLanguage": "Any language",
+      "spanish": "Spanish",
+      "english": "English"
     },
     "status": {
       "searching": "Searching...",
