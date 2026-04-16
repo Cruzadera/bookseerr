@@ -344,8 +344,15 @@ docker compose up -d --build
 
 * [✅] Automatic shelves
 * [✅] Upgrading UI
-* [ ] Add configurable settings
-* [ ] Notifications
+* [✅] Add configurable settings
+* [ ] Improve search results UI (covers, metadata, better layout)
+* [ ] Recently searched & quick actions
+* [ ] Favorites / Watchlist system
+* [ ] Enhanced job tracking & activity view
+* [ ] Notifications (download/import status)
+* [ ] Improve Settings UI (reduce .env dependency)
+* [ ] Better Calibre-Web integration (shelves & workflows)
+* [ ] Optional discovery features (metadata, basic browsing)
 
 ---
 
