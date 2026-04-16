@@ -29,10 +29,24 @@ body {
     linear-gradient(135deg, #eadfcf 0%, var(--bg) 45%, #e4d5c0 100%);
 }
 
+.hero-title {
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: clamp(2.4rem, 4.2vw, 3.8rem);
+  font-weight: 800;
+  /* background: linear-gradient(90deg, rgba(240, 215, 196, 0.95) 0%, rgba(162, 75, 42, 0.75) 100%); */
+  background: linear-gradient(90deg, var(--accent-soft), rgba(162, 75, 42, 0.95));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
 .app-shell {
-  width: min(1180px, calc(100% - 2rem));
-  margin: 0 auto;
-  padding: 2rem 0;
+  width: 100%;
+  margin: 0;
+  padding: 1.25rem 1.5rem 1.25rem 0.5rem;
 }
 
 .layout-shell {
@@ -40,12 +54,13 @@ body {
   grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
-  min-height: calc(100vh - 4rem);
+  min-height: calc(100vh - 2.5rem);
 }
 
 .sidebar {
-  position: left;
-  top: 1.5rem;
+  position: sticky;
+  left: 0;
+  top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -65,6 +80,7 @@ body {
 
 .eyebrow {
   margin: 0 0 0.8rem;
+  text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.28em;
   font-size: 0.74rem;
@@ -74,9 +90,9 @@ body {
 
 .brand-block {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.85rem;
-  align-items: center;
+  align-items: start;
   padding: 0.15rem 0.15rem 1rem;
   border-bottom: 1px solid rgba(255, 247, 239, 0.1);
 }
@@ -84,19 +100,35 @@ body {
 .brand-mark {
   display: grid;
   place-items: center;
+  align-self: start;
   width: 2.8rem;
   height: 2.8rem;
-  margin: 0;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  border: 0;
   border-radius: 18px;
   background: linear-gradient(135deg, var(--accent), #cb7a57);
   color: #fff8f3;
   font-size: 1.3rem;
   font-weight: 800;
+  line-height: 1;
   box-shadow: 0 14px 26px rgba(162, 75, 42, 0.3);
+  cursor: pointer;
+}
+
+.brand-mark:hover {
+  background: linear-gradient(135deg, var(--accent-strong), #cb7a57);
+}
+
+.brand-mark:focus-visible {
+  outline: 2px solid rgba(255, 248, 243, 0.8);
+  outline-offset: 2px;
 }
 
 .brand-copy {
   min-width: 0;
+  padding-top: 0.1rem;
+  text-align: center;
 }
 
 .brand-block h1 {
@@ -105,27 +137,10 @@ body {
   font-size: clamp(2rem, 3vw, 2.7rem);
   line-height: 1;
   letter-spacing: -0.05em;
+  text-align: center;
   text-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
 }
 
-.sidebar-toggle {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border-radius: 999px;
-  color: var(--sidebar-text);
-  background: rgba(255, 248, 243, 0.12);
-}
-
-.sidebar-toggle:hover {
-  background: rgba(255, 248, 243, 0.22);
-}
-
-.sidebar.is-collapsed .sidebar-toggle span {
-  transform: rotate(180deg);
-}
 
 .sidebar-nav {
   display: grid;
@@ -228,6 +243,13 @@ body {
 
 .page-shell {
   min-width: 0;
+  width: 100%;
+  max-width: 1100px;
+  justify-self: center;
+}
+
+.page-view {
+  width: 100%;
 }
 
 .page-view.hidden {
@@ -235,8 +257,17 @@ body {
 }
 
 .hero {
-  margin-bottom: 1.4rem;
+  margin: 0 auto 1.4rem;
+  max-width: 900px;
   padding: 1.5rem 1.65rem 0;
+  text-align: center;
+}
+
+.hero-title {
+  margin: 0;
+  line-height: 1.05;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .hero::before {
@@ -244,38 +275,44 @@ body {
   display: block;
   width: min(12rem, 42vw);
   height: 0.55rem;
-  margin-bottom: 1rem;
+  margin: 0 auto 1rem;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-soft), rgba(162, 75, 42, 0.95));
   box-shadow: 0 10px 24px rgba(162, 75, 42, 0.18);
 }
 
 .hero-lead {
-  margin: 0;
+  margin: 0 auto;
   max-width: 40rem;
-  font-size: clamp(1.4rem, 3vw, 2.6rem);
-  line-height: 1.45;
+  font-size: clamp(1.2rem, 2.35vw, 2rem);
+  line-height: 1.35;
   color: var(--text);
   text-wrap: balance;
 }
 
+.hero-subtitle,
 .subtitle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 1rem 0 0;
-  padding: 0.55rem 0.95rem;
-  max-width: 38rem;
-  border: 1px solid rgba(107, 79, 47, 0.12);
+  margin: 1rem auto 0;
+  padding: 0.7rem 1.2rem;
+  max-width: 34rem;
+  border: 1px solid rgba(162, 75, 42, 0.12);
   border-radius: 999px;
-  background: rgba(255, 252, 247, 0.62);
-  color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.4;
+  background: rgba(255, 252, 247, 0.72);
+  color: var(--text);
+  font-size: clamp(1rem, 1.25vw, 1.1rem);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  text-transform: none;
   box-shadow: 0 10px 24px rgba(84, 57, 32, 0.06);
 }
 
 .panel {
+  max-width: 860px;
+  margin: 0 auto;
   padding: 1.5rem;
   border: 1px solid var(--panel-border);
   border-radius: 24px;
@@ -464,7 +501,7 @@ button.secondary:hover {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 2rem 0;
+    padding: 1rem;
   }
 
   .layout-shell {
@@ -512,6 +549,7 @@ button.secondary:hover {
     padding: 0.25rem 0.25rem 0;
   }
 
+  .hero-subtitle,
   .subtitle {
     display: block;
     border-radius: 18px;
