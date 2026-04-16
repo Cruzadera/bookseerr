@@ -1,16 +1,25 @@
 # Bookseerr – Ebook Request Manager for Calibre-Web
 
-> A lightweight alternative to Overseerr for managing ebooks with Calibre-Web.
+> A Jellyseerr-like app for managing ebook requests with Calibre-Web.
 
-Bookseerr is a self-hosted ebook request manager designed to automate ebook search, download, and import into your Calibre-Web library.
-
-It integrates tools like Prowlarr and qBittorrent into a seamless pipeline, allowing users to search and request books from a simple web interface.
+Bookseerr is a self-hosted app that automates ebook search, download, and import into your Calibre-Web library — all from a simple web UI.
 
 ---
 
-## 🔍 Keywords
+## 📸 Preview
 
-self-hosted ebook manager, calibre-web automation, ebook request system, overseerr for books, ebook downloader, prowlarr books, qbittorrent ebooks
+![Home](./docs/home.png)
+![Settings](./docs/settings.png)
+
+---
+
+## ✨ Highlights
+
+- Full Settings UI (search, downloads, library behavior)
+- Smart filtering (format, size, seeders, language)
+- Auto-download rules
+- Calibre-Web shelf integration
+- Fully automated pipeline (search → download → import)
 
 ---
 
@@ -41,6 +50,7 @@ Bookseerr integrates popular self-hosted services into a fully automated ebook p
 * Fully self-hosted and lightweight
 
 ---
+
 
 ## ⚠️ qBittorrent Configuration (IMPORTANT)
 
@@ -341,4 +351,4 @@ docker compose up -d --build
 
 ## 📄 License
 
-No license defined yet. Add one (MIT recommended) before public distribution.
+MIT License © 2026 Cruzadera
