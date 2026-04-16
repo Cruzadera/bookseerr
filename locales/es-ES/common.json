@@ -18,6 +18,7 @@
     "noResults": "No se encontraron libros coincidentes.",
     "format": "Formato",
     "seeders": "Semillas",
+    "size": "Tamaño",
     "indexer": "Indexador desconocido",
     "nav": {
       "home": "Inicio",
@@ -28,9 +29,39 @@
       "destination": "Estantería de destino",
       "generalLibrary": "Biblioteca general"
     },
+    "quickFilters": {
+      "title": "Filtros rápidos",
+      "onlyEpub": "Solo EPUB",
+      "spanishOnly": "Solo español",
+      "under20MB": "< 20 MB"
+    },
     "placeholders": {
       "settings": "Configuración",
       "comingSoon": "Próximamente"
+    },
+    "settings": {
+      "title": "Preferencias de búsqueda y descarga",
+      "description": "Ajusta el ranking, los límites y el comportamiento de Calibre-Web.",
+      "filtersTitle": "Filtros de búsqueda",
+      "downloadTitle": "Comportamiento de descarga",
+      "calibreTitle": "Calibre-Web",
+      "preferredFormat": "Formato preferido",
+      "excludedFormats": "Formatos excluidos",
+      "minSeeds": "Semillas mínimas",
+      "maxSizeMB": "Tamaño máximo (MB)",
+      "language": "Idioma",
+      "autoDownload": "Descargar automáticamente el mejor resultado tras buscar",
+      "onlyIfPreferredFormat": "Solo descargar si coincide con el formato preferido",
+      "defaultShelf": "Estantería de destino por defecto",
+      "rememberLastShelf": "Recordar la última estantería seleccionada",
+      "save": "Guardar configuración",
+      "reset": "Restablecer valores",
+      "saved": "Configuración guardada.",
+      "defaultsRestored": "Los valores predeterminados se restauraron en el formulario.",
+      "anyFormat": "Cualquier formato",
+      "anyLanguage": "Cualquier idioma",
+      "spanish": "Español",
+      "english": "Inglés"
     },
     "status": {
       "searching": "Buscando...",

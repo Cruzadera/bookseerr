@@ -499,6 +499,132 @@ button.secondary:hover {
   color: var(--muted);
 }
 
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.quick-filter-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(107, 79, 47, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.chip-toggle input,
+.toggle-field input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.settings-panel {
+  max-width: 920px;
+}
+
+.settings-header {
+  margin-bottom: 1rem;
+}
+
+.settings-header h2 {
+  margin: 0.35rem 0 0;
+}
+
+.settings-copy {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+}
+
+.settings-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  column-gap: 1rem;
+  align-items: start;
+}
+
+.settings-side-stack {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+}
+
+.settings-group {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+  align-self: start;
+  padding: 1rem;
+  border: 1px solid rgba(107, 79, 47, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.settings-group h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.settings-group-full {
+  grid-column: 1 / -1;
+}
+
+.checkbox-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.checkbox-fieldset legend {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.toggle-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(107, 79, 47, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  line-height: 1.35;
+}
+
+.toggle-field span {
+  flex: 1;
+}
+
+.settings-actions {
+  justify-content: flex-start;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     padding: 1rem;
@@ -541,7 +667,9 @@ button.secondary:hover {
   }
 
   .search-row,
-  .result-card {
+  .result-card,
+  .settings-grid,
+  .checkbox-grid {
     grid-template-columns: 1fr;
   }
 

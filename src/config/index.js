@@ -95,6 +95,8 @@ module.exports = {
     processedDir:
       process.env.PROCESSED_DIR || "/mnt/unionlib/Descargas/.imported",
     stateFile: process.env.STATE_FILE || path.join("/data", "state.json"),
+    settingsFile:
+      process.env.SETTINGS_FILE || path.join("/data", "settings.json"),
   },
   watcher: {
     enabled: `${process.env.WATCHER_ENABLED || "true"}` === "true",

@@ -1,66 +1,180 @@
-// Global i18n instance
 let i18n = null;
 
-// DOM Elements - will be initialized after DOM is ready
 let searchInput;
 let searchButton;
 let requestButton;
 let resultsContainer;
 let statusElement;
+let settingsStatusElement;
 let destinationShelfField;
 let destinationShelfSelect;
 let navLinks;
 let pageViews;
 let sidebar;
 let sidebarToggle;
+let settingsForm;
+let resetSettingsButton;
+let preferredFormatSelect;
+let minSeedsInput;
+let maxSizeInput;
+let settingsLanguageSelect;
+let autoDownloadInput;
+let onlyPreferredFormatInput;
+let defaultShelfSelect;
+let rememberLastShelfInput;
+let quickOnlyEpubInput;
+let quickSpanishOnlyInput;
+let quickUnder20Input;
+
+const LAST_SHELF_STORAGE_KEY = "bookseerr:last-destination-shelf";
+const DEFAULT_SETTINGS = {
+  filters: {
+    preferredFormat: "epub",
+    excludedFormats: ["pdf"],
+    minSeeds: 5,
+    maxSizeMB: 50,
+    language: "any",
+  },
+  download: {
+    autoDownload: false,
+    onlyIfPreferredFormat: true,
+  },
+  calibre: {
+    defaultShelf: null,
+    rememberLastShelf: true,
+  },
+};
 
 const uiState = {
   destinationShelfEnabled: false,
+  destinationShelves: [],
+  settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
 };
 
-// Helper function to translate UI elements with data-i18n attributes
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function isObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function mergeSettings(base, override) {
+  if (!isObject(override)) {
+    return base;
+  }
+
+  const result = { ...base };
+
+  Object.entries(override).forEach(([key, value]) => {
+    if (isObject(value) && isObject(result[key])) {
+      result[key] = mergeSettings(result[key], value);
+      return;
+    }
+
+    result[key] = value;
+  });
+
+  return result;
+}
+
+function normalizeLanguage(value) {
+  const normalized = `${value || "any"}`.trim().toLowerCase();
+
+  if (normalized.startsWith("es")) {
+    return "es";
+  }
+
+  if (normalized.startsWith("en")) {
+    return "en";
+  }
+
+  return "any";
+}
+
+function normalizeSettings(value = {}) {
+  const merged = mergeSettings(clone(DEFAULT_SETTINGS), value);
+  const preferredFormat = `${merged.filters?.preferredFormat || "epub"}`
+    .trim()
+    .toLowerCase();
+  const allowedFormats = new Set(["any", "epub", "mobi", "azw3", "pdf"]);
+
+  return {
+    filters: {
+      preferredFormat: allowedFormats.has(preferredFormat) ? preferredFormat : "epub",
+      excludedFormats: [
+        ...new Set(
+          (Array.isArray(merged.filters?.excludedFormats)
+            ? merged.filters.excludedFormats
+            : DEFAULT_SETTINGS.filters.excludedFormats
+          )
+            .map((item) => `${item || ""}`.trim().toLowerCase())
+            .filter((item) => item && item !== preferredFormat),
+        ),
+      ],
+      minSeeds: Math.max(0, Number(merged.filters?.minSeeds ?? 0) || 0),
+      maxSizeMB: Math.max(0, Number(merged.filters?.maxSizeMB ?? 0) || 0),
+      language: normalizeLanguage(merged.filters?.language),
+    },
+    download: {
+      autoDownload: Boolean(merged.download?.autoDownload),
+      onlyIfPreferredFormat:
+        merged.download?.onlyIfPreferredFormat === undefined
+          ? true
+          : Boolean(merged.download.onlyIfPreferredFormat),
+    },
+    calibre: {
+      defaultShelf: `${merged.calibre?.defaultShelf || ""}`.trim() || null,
+      rememberLastShelf:
+        merged.calibre?.rememberLastShelf === undefined
+          ? true
+          : Boolean(merged.calibre.rememberLastShelf),
+    },
+  };
+}
+
 function translateUI() {
-  console.log('[app] translateUI called, i18n:', i18n ? 'ready' : 'not ready');
-  
   if (!i18n) {
-    console.warn('[app] i18n not initialized');
     return;
   }
 
-  const elements = document.querySelectorAll("[data-i18n]");
-  console.log('[app] Found', elements.length, 'elements with data-i18n');
-
-  elements.forEach((element) => {
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
     const key = element.getAttribute("data-i18n");
-    const translated = i18n.t(key);
-    console.log('[app] Translating:', key, '→', translated);
-    element.textContent = translated;
+    element.textContent = i18n.t(key);
   });
 
-  const placeholders = document.querySelectorAll("[data-i18n-placeholder]");
-  console.log('[app] Found', placeholders.length, 'elements with data-i18n-placeholder');
-
-  placeholders.forEach((element) => {
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
     const key = element.getAttribute("data-i18n-placeholder");
-    const translated = i18n.t(key);
-    console.log('[app] Translating placeholder:', key, '→', translated);
-    element.placeholder = translated;
+    element.placeholder = i18n.t(key);
   });
 }
 
-// Initialize DOM references - call after DOM is ready
 function initializeDOMElements() {
   searchInput = document.getElementById("search");
   searchButton = document.getElementById("search-button");
   requestButton = document.getElementById("request-button");
   resultsContainer = document.getElementById("results");
   statusElement = document.getElementById("status");
+  settingsStatusElement = document.getElementById("settings-status");
   destinationShelfField = document.getElementById("destination-shelf-field");
   destinationShelfSelect = document.getElementById("destination-shelf");
   navLinks = Array.from(document.querySelectorAll(".nav-link"));
   pageViews = Array.from(document.querySelectorAll("[data-page-view]"));
   sidebar = document.querySelector(".sidebar");
   sidebarToggle = document.getElementById("sidebar-toggle");
+  settingsForm = document.getElementById("settings-form");
+  resetSettingsButton = document.getElementById("reset-settings-button");
+  preferredFormatSelect = document.getElementById("preferred-format");
+  minSeedsInput = document.getElementById("min-seeds");
+  maxSizeInput = document.getElementById("max-size-mb");
+  settingsLanguageSelect = document.getElementById("settings-language");
+  autoDownloadInput = document.getElementById("auto-download");
+  onlyPreferredFormatInput = document.getElementById("only-preferred-format");
+  defaultShelfSelect = document.getElementById("default-shelf");
+  rememberLastShelfInput = document.getElementById("remember-last-shelf");
+  quickOnlyEpubInput = document.getElementById("quick-only-epub");
+  quickSpanishOnlyInput = document.getElementById("quick-spanish-only");
+  quickUnder20Input = document.getElementById("quick-under-20");
 }
 
 function setActivePage(page) {
@@ -76,8 +190,14 @@ function setActivePage(page) {
 }
 
 function setStatus(message, isError = false) {
-  statusElement.textContent = message;
-  statusElement.classList.toggle("error", isError);
+  [statusElement, settingsStatusElement].forEach((element) => {
+    if (!element) {
+      return;
+    }
+
+    element.textContent = message || "";
+    element.classList.toggle("error", isError);
+  });
 }
 
 function setSidebarCollapsed(isCollapsed) {
@@ -102,60 +222,245 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function formatSize(sizeMB) {
+  const numeric = Number(sizeMB || 0);
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return "—";
+  }
+
+  return `${numeric >= 10 ? numeric.toFixed(0) : numeric.toFixed(1)} MB`;
+}
+
 async function handleJsonResponse(response) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || (i18n ? i18n.t("errors.requestFailed") : "Request failed"));
+    throw new Error(
+      data.error || (i18n ? i18n.t("errors.requestFailed") : "Request failed"),
+    );
   }
 
   return data;
+}
+
+function populateDestinationShelfOptions() {
+  const defaultLabel = i18n ? i18n.t("ui.shelf.generalLibrary") : "General library";
+  const optionMarkup = [
+    `<option value="">${escapeHtml(defaultLabel)}</option>`,
+    ...uiState.destinationShelves.map(
+      (item) =>
+        `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`,
+    ),
+  ].join("");
+
+  if (destinationShelfSelect) {
+    destinationShelfSelect.innerHTML = optionMarkup;
+  }
+
+  if (defaultShelfSelect) {
+    defaultShelfSelect.innerHTML = optionMarkup;
+    defaultShelfSelect.disabled = uiState.destinationShelves.length === 0;
+  }
+
+  if (destinationShelfField) {
+    destinationShelfField.classList.toggle("hidden", !uiState.destinationShelfEnabled);
+  }
+
+  applyDestinationShelfPreference();
+}
+
+function applyDestinationShelfPreference() {
+  const defaultShelf = uiState.settings.calibre?.defaultShelf || "";
+  const rememberLastShelf = Boolean(uiState.settings.calibre?.rememberLastShelf);
+  const savedShelf = rememberLastShelf
+    ? localStorage.getItem(LAST_SHELF_STORAGE_KEY) || ""
+    : "";
+  const preferredShelf = savedShelf || defaultShelf || "";
+  const hasPreferredShelf = uiState.destinationShelves.some(
+    (item) => item.id === preferredShelf,
+  );
+  const hasDefaultShelf = uiState.destinationShelves.some(
+    (item) => item.id === defaultShelf,
+  );
+
+  if (destinationShelfSelect) {
+    destinationShelfSelect.value = hasPreferredShelf ? preferredShelf : "";
+  }
+
+  if (defaultShelfSelect) {
+    defaultShelfSelect.value = hasDefaultShelf ? defaultShelf : "";
+  }
+
+  if (!rememberLastShelf) {
+    localStorage.removeItem(LAST_SHELF_STORAGE_KEY);
+  }
+}
+
+function populateSettingsForm() {
+  if (!settingsForm) {
+    return;
+  }
+
+  const settings = uiState.settings;
+  preferredFormatSelect.value = settings.filters.preferredFormat;
+  minSeedsInput.value = settings.filters.minSeeds;
+  maxSizeInput.value = settings.filters.maxSizeMB;
+  settingsLanguageSelect.value = settings.filters.language;
+  autoDownloadInput.checked = Boolean(settings.download.autoDownload);
+  onlyPreferredFormatInput.checked = Boolean(settings.download.onlyIfPreferredFormat);
+  rememberLastShelfInput.checked = Boolean(settings.calibre.rememberLastShelf);
+
+  const excludedFormats = new Set(settings.filters.excludedFormats || []);
+  document.querySelectorAll('input[name="excludedFormats"]').forEach((input) => {
+    input.checked = excludedFormats.has(input.value);
+  });
+
+  if (defaultShelfSelect) {
+    defaultShelfSelect.value = settings.calibre.defaultShelf || "";
+  }
+}
+
+function applyLoadedSettings(data) {
+  uiState.settings = normalizeSettings(data.settings || {});
+  uiState.destinationShelves = Array.isArray(data.destinationShelves)
+    ? data.destinationShelves
+    : [];
+  uiState.destinationShelfEnabled =
+    Boolean(data.features?.destinationShelf) && uiState.destinationShelves.length > 0;
+
+  populateDestinationShelfOptions();
+  populateSettingsForm();
 }
 
 async function loadSettings() {
   try {
     const response = await fetch("/api/settings");
     const data = await handleJsonResponse(response);
-    const destinationShelves = Array.isArray(data.destinationShelves)
-      ? data.destinationShelves
-      : [];
-
-    uiState.destinationShelfEnabled =
-      Boolean(data.features?.destinationShelf) && destinationShelves.length > 0;
-
-    if (!uiState.destinationShelfEnabled) {
-      destinationShelfField.classList.add("hidden");
-      return;
-    }
-
-    const defaultLabel = i18n ? i18n.t("ui.shelf.generalLibrary") : "General library";
-    destinationShelfSelect.innerHTML = [
-      `<option value="">${defaultLabel}</option>`,
-      ...destinationShelves.map(
-        (item) =>
-          `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`,
-      ),
-    ].join("");
-
-    destinationShelfField.classList.remove("hidden");
+    applyLoadedSettings(data);
   } catch (error) {
     setStatus(error.message, true);
   }
 }
 
+function collectSettingsFormValue() {
+  const preferredFormat = preferredFormatSelect.value || "epub";
+  const excludedFormats = Array.from(
+    document.querySelectorAll('input[name="excludedFormats"]:checked'),
+  )
+    .map((input) => input.value)
+    .filter((item) => item !== preferredFormat);
+
+  return {
+    filters: {
+      preferredFormat,
+      excludedFormats,
+      minSeeds: Number(minSeedsInput.value || 0),
+      maxSizeMB: Number(maxSizeInput.value || 0),
+      language: settingsLanguageSelect.value || "any",
+    },
+    download: {
+      autoDownload: autoDownloadInput.checked,
+      onlyIfPreferredFormat: onlyPreferredFormatInput.checked,
+    },
+    calibre: {
+      defaultShelf: defaultShelfSelect?.value || null,
+      rememberLastShelf: rememberLastShelfInput.checked,
+    },
+  };
+}
+
+async function saveSettings(event) {
+  event.preventDefault();
+
+  try {
+    const response = await fetch("/api/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(collectSettingsFormValue()),
+    });
+
+    const data = await handleJsonResponse(response);
+    applyLoadedSettings(data);
+    setStatus(i18n ? i18n.t("ui.settings.saved") : "Settings saved.");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+function resetSettingsForm() {
+  uiState.settings = clone(DEFAULT_SETTINGS);
+  populateSettingsForm();
+  setStatus(
+    i18n ? i18n.t("ui.settings.defaultsRestored") : "Defaults restored in the form.",
+  );
+}
+
 function getSelectedDestinationShelf() {
-  if (!uiState.destinationShelfEnabled) {
+  if (!uiState.destinationShelfEnabled || !destinationShelfSelect) {
     return "";
   }
 
   return destinationShelfSelect.value || "";
 }
 
+function rememberDestinationShelf() {
+  if (!destinationShelfSelect) {
+    return;
+  }
+
+  if (uiState.settings.calibre?.rememberLastShelf) {
+    localStorage.setItem(LAST_SHELF_STORAGE_KEY, destinationShelfSelect.value || "");
+    return;
+  }
+
+  localStorage.removeItem(LAST_SHELF_STORAGE_KEY);
+}
+
+function buildSearchUrl(query) {
+  const params = new URLSearchParams({ query });
+
+  if (quickOnlyEpubInput?.checked) {
+    params.set("onlyEpub", "true");
+  }
+
+  if (quickSpanishOnlyInput?.checked) {
+    params.set("spanishOnly", "true");
+  }
+
+  if (quickUnder20Input?.checked) {
+    params.set("maxSizeMB", "20");
+  }
+
+  return `/api/search?${params.toString()}`;
+}
+
+async function maybeAutoDownload(results) {
+  if (!uiState.settings.download.autoDownload || !Array.isArray(results) || !results.length) {
+    return;
+  }
+
+  const best = results[0];
+  const preferredFormat = uiState.settings.filters.preferredFormat || "any";
+  const formatMatches = preferredFormat === "any" || best.format === preferredFormat;
+
+  if (uiState.settings.download.onlyIfPreferredFormat && !formatMatches) {
+    return;
+  }
+
+  await downloadBook(best.title, best.downloadUrl, best.protocol || "torrent");
+}
+
 async function search() {
   const query = searchInput.value.trim();
 
   if (!query) {
-    setStatus(i18n ? i18n.t("ui.status.enterTitle") : "Enter a book title to search.", true);
+    setStatus(
+      i18n ? i18n.t("ui.status.enterTitle") : "Enter a book title to search.",
+      true,
+    );
     resultsContainer.innerHTML = "";
     return;
   }
@@ -164,12 +469,15 @@ async function search() {
   resultsContainer.innerHTML = "";
 
   try {
-    const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+    const res = await fetch(buildSearchUrl(query));
     const data = await handleJsonResponse(res);
     renderResults(data);
     const count = data.count || 0;
-    const message = i18n ? i18n.t("ui.status.foundResults", { count }) : `${count} result(s) found.`;
+    const message = i18n
+      ? i18n.t("ui.status.foundResults", { count })
+      : `${count} result(s) found.`;
     setStatus(message);
+    await maybeAutoDownload(data.results || []);
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -186,7 +494,8 @@ function renderResults(data) {
 
   const formatLabel = i18n ? i18n.t("ui.format") : "Format";
   const seedersLabel = i18n ? i18n.t("ui.seeders") : "Seeders";
-  const downloadBtn = i18n ? i18n.t("ui.searchButton") : "Download";
+  const sizeLabel = i18n ? i18n.t("ui.size") : "Size";
+  const downloadBtn = i18n ? i18n.t("common.download") : "Download";
   const unknownIndexer = i18n ? i18n.t("ui.indexer") : "Unknown indexer";
 
   resultsContainer.innerHTML = results
@@ -206,13 +515,17 @@ function renderResults(data) {
               <dt>${seedersLabel}</dt>
               <dd>${item.seeders ?? 0}</dd>
             </div>
+            <div>
+              <dt>${sizeLabel}</dt>
+              <dd>${formatSize(item.sizeMB)}</dd>
+            </div>
           </dl>
           <button
             type="button"
             class="download-button"
             data-title="${escapeHtml(item.title)}"
             data-download-url="${encodeURIComponent(item.downloadUrl || "")}"
-            data-protocol="${escapeHtml(item.protocol || "torrent")}"
+            data-protocol="${escapeHtml(item.protocol || "torrent")}" 
           >
             ${downloadBtn}
           </button>
@@ -223,7 +536,9 @@ function renderResults(data) {
 }
 
 async function downloadBook(title, downloadUrl, protocol) {
-  const msg = i18n ? i18n.t("ui.status.downloadStarting", { title }) : `Starting download for "${title}"...`;
+  const msg = i18n
+    ? i18n.t("ui.status.downloadStarting", { title })
+    : `Starting download for "${title}"...`;
   setStatus(msg);
 
   try {
@@ -242,7 +557,9 @@ async function downloadBook(title, downloadUrl, protocol) {
     });
 
     const data = await handleJsonResponse(res);
-    const successMsg = data.message || (i18n ? i18n.t("ui.status.downloadSuccess") : "Download started.");
+    const successMsg =
+      data.message ||
+      (i18n ? i18n.t("ui.status.downloadSuccess") : "Download started.");
     setStatus(successMsg);
   } catch (error) {
     setStatus(error.message, true);
@@ -253,7 +570,9 @@ async function requestBook() {
   const query = searchInput.value.trim();
 
   if (!query) {
-    const msg = i18n ? i18n.t("ui.alerts.enterBeforeRequest") : "Enter a book title before requesting a download.";
+    const msg = i18n
+      ? i18n.t("ui.alerts.enterBeforeRequest")
+      : "Enter a book title before requesting a download.";
     setStatus(msg, true);
     return;
   }
@@ -272,66 +591,59 @@ async function requestBook() {
     });
 
     const data = await handleJsonResponse(res);
-    const successMsg = i18n ? i18n.t("ui.status.requestSuccess", { title: data.selected }) : `Download started for "${data.selected}".`;
+    const successMsg = i18n
+      ? i18n.t("ui.status.requestSuccess", { title: data.selected })
+      : `Download started for "${data.selected}".`;
     setStatus(successMsg);
-    const alertMsg = i18n ? i18n.t("ui.alerts.downloadStarted") : "Download started!";
-    alert(alertMsg);
   } catch (error) {
     setStatus(error.message, true);
   }
 }
 
-// Initialize app
 (async () => {
-  console.log('[app] Initialization started');
-  
+  initializeDOMElements();
+
   try {
-    // Initialize i18n first
-    console.log('[app] Calling window.initI18n()');
     i18n = await window.initI18n();
-    console.log('[app] i18n initialized with language:', i18n.getLanguage());
-    
-    // Apply translations to UI elements
-    console.log('[app] Calling translateUI()');
     translateUI();
-    
-    // Initialize DOM element references
-    console.log('[app] Initializing DOM elements');
-    initializeDOMElements();
-    console.log('[app] DOM elements initialized');
   } catch (error) {
     console.error("[app] Failed to initialize i18n:", error);
   }
 
-  console.log('[app] Loading settings');
-  loadSettings();
+  await loadSettings();
   setActivePage("home");
 
-  console.log('[app] Adding event listeners');
-  searchButton.addEventListener("click", search);
+  if (searchButton) {
+    searchButton.addEventListener("click", search);
+  }
+
   if (requestButton) {
     requestButton.addEventListener("click", requestBook);
   }
 
-  searchInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      search();
-    }
-  });
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        search();
+      }
+    });
+  }
 
-  resultsContainer.addEventListener("click", (event) => {
-    const button = event.target.closest(".download-button");
+  if (resultsContainer) {
+    resultsContainer.addEventListener("click", (event) => {
+      const button = event.target.closest(".download-button");
 
-    if (!button) {
-      return;
-    }
+      if (!button) {
+        return;
+      }
 
-    downloadBook(
-      button.dataset.title,
-      decodeURIComponent(button.dataset.downloadUrl || ""),
-      button.dataset.protocol || "torrent",
-    );
-  });
+      downloadBook(
+        button.dataset.title,
+        decodeURIComponent(button.dataset.downloadUrl || ""),
+        button.dataset.protocol || "torrent",
+      );
+    });
+  }
 
   navLinks.forEach((link) => {
     link.addEventListener("click", () => {
@@ -345,6 +657,16 @@ async function requestBook() {
       setSidebarCollapsed(!isCollapsed);
     });
   }
-  
-  console.log('[app] Initialization complete');
+
+  if (destinationShelfSelect) {
+    destinationShelfSelect.addEventListener("change", rememberDestinationShelf);
+  }
+
+  if (settingsForm) {
+    settingsForm.addEventListener("submit", saveSettings);
+  }
+
+  if (resetSettingsButton) {
+    resetSettingsButton.addEventListener("click", resetSettingsForm);
+  }
 })();
