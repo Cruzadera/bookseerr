@@ -14,6 +14,7 @@ Bookseerr is a self-hosted app that connects `Prowlarr`, `qBittorrent`, and `Cal
 - React frontend built with `Vite`
 - Search view with rich result cards, covers, and quick filters
 - Recent searches persisted locally for quick re-triggering
+- Recent job activity with retry and re-download actions
 - Full settings UI for ranking, download, and Calibre-Web behavior
 - Automatic import pipeline from completed downloads into Calibre-Web
 - Optional destination shelf selection and last-shelf memory
@@ -49,6 +50,7 @@ Current UI features include:
 - Recent searches shown under the search field
 - One-click re-run of a recent search
 - Clear recent search history
+- Recent job activity with retry for failed jobs and re-download for completed ones
 - Destination shelf selector when configured
 - Full settings page for search and download preferences
 - Result cards with cover, metadata, and direct download actions
@@ -270,6 +272,10 @@ Persists frontend-managed settings.
 ### `GET /api/jobs`
 
 Returns tracked jobs.
+
+### `POST /api/jobs/:jobId/retry`
+
+Creates a new download job using the stored data from a failed or completed tracked job.
 
 ## Automation flow
 

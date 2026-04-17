@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import SearchView from "./components/SearchView";
 import SettingsView from "./components/SettingsView";
 import Sidebar from "./components/Sidebar";
+import JobsView from "./components/JobsView";
 import { useI18n } from "./hooks/useI18n";
 import {
   cloneSettings,
@@ -13,6 +14,52 @@ import {
 
 const RECENT_SEARCHES_STORAGE_KEY = "bookseerr:recent-searches";
 const RECENT_SEARCHES_LIMIT = 8;
+
+function normalizeRecentSearchEntry(value) {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  const candidateKeys = ["query", "term", "title", "text", "value", "label"];
+
+  for (const key of candidateKeys) {
+    if (typeof value[key] === "string" && value[key].trim()) {
+      return value[key].trim();
+    }
+  }
+
+  return "";
+}
+
+function normalizeRecentSearches(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  const seen = new Set();
+
+  return values
+    .map(normalizeRecentSearchEntry)
+    .filter((item) => {
+      if (!item) {
+        return false;
+      }
+
+      const normalized = item.toLowerCase();
+
+      if (seen.has(normalized)) {
+        return false;
+      }
+
+      seen.add(normalized);
+      return true;
+    })
+    .slice(0, RECENT_SEARCHES_LIMIT);
+}
 
 function waitForMinimum(startedAt, durationMs) {
   const elapsed = Date.now() - startedAt;
@@ -72,12 +119,7 @@ export default function App() {
       const storedValue = window.localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
       const parsedValue = JSON.parse(storedValue || "[]");
 
-      return Array.isArray(parsedValue)
-        ? parsedValue
-            .map((value) => `${value || ""}`.trim())
-            .filter(Boolean)
-            .slice(0, RECENT_SEARCHES_LIMIT)
-        : [];
+      return normalizeRecentSearches(parsedValue);
     } catch {
       return [];
     }
@@ -87,6 +129,8 @@ export default function App() {
   const [searchError, setSearchError] = useState("");
   const [resultErrors, setResultErrors] = useState({});
   const [downloadingKey, setDownloadingKey] = useState("");
+  const [jobs, setJobs] = useState([]);
+  const [jobActionId, setJobActionId] = useState("");
   const [destinationShelfEnabled, setDestinationShelfEnabled] = useState(false);
   const [destinationShelves, setDestinationShelves] = useState([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
@@ -129,6 +173,29 @@ export default function App() {
       JSON.stringify(recentSearches),
     );
   }, [recentSearches]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadJobs() {
+      try {
+        const response = await fetch("/api/jobs");
+        const data = await handleJsonResponse(response);
+
+        if (!cancelled) {
+          setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+        }
+      } catch {}
+    }
+
+    loadJobs();
+    const intervalId = window.setInterval(loadJobs, 8000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -227,6 +294,25 @@ export default function App() {
     settings.calibre?.rememberLastShelf,
   ]);
 
+  function mergeJob(job) {
+    if (!job?.id) {
+      return;
+    }
+
+    setJobs((current) => {
+      const next = current.filter((item) => item.id !== job.id);
+      return [job, ...next].sort((a, b) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+    });
+  }
+
+  async function refreshJobs() {
+    const response = await fetch("/api/jobs");
+    const data = await handleJsonResponse(response);
+    setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+  }
+
   async function downloadBook(item) {
     const startedAt = Date.now();
     const resultKey = `${item.title}::${item.downloadUrl}`;
@@ -259,6 +345,7 @@ export default function App() {
 
       const data = await handleJsonResponse(response);
       await waitForMinimum(startedAt, 650);
+      mergeJob(data.job);
       setHomeStatus({
         message: data.message || t("ui.status.downloadSuccess"),
         error: false,
@@ -293,10 +380,15 @@ export default function App() {
   }
 
   function saveRecentSearch(searchQuery) {
-    setRecentSearches((current) => [
-      searchQuery,
-      ...current.filter((item) => item.toLowerCase() !== searchQuery.toLowerCase()),
-    ].slice(0, RECENT_SEARCHES_LIMIT));
+    const normalizedSearchQuery = normalizeRecentSearchEntry(searchQuery);
+
+    if (!normalizedSearchQuery) {
+      return;
+    }
+
+    setRecentSearches((current) =>
+      normalizeRecentSearches([normalizedSearchQuery, ...current]),
+    );
   }
 
   function clearRecentSearches() {
@@ -377,6 +469,7 @@ export default function App() {
 
       const data = await handleJsonResponse(response);
       await waitForMinimum(startedAt, 650);
+      mergeJob(data.job);
       setHomeStatus({
         message: t("ui.status.requestSuccess", { title: data.selected }),
         error: false,
@@ -419,6 +512,44 @@ export default function App() {
   function resetSettings() {
     setSettings(cloneSettings(DEFAULT_SETTINGS));
     setSettingsStatus({ message: t("ui.settings.defaultsRestored"), error: false });
+  }
+
+  async function restartJob(job) {
+    if (!job?.id || jobActionId) {
+      return;
+    }
+
+    const startedAt = Date.now();
+    const isRetry = job.state === "error";
+
+    setJobActionId(job.id);
+    setHomeStatus({
+      message: isRetry
+        ? t("ui.jobs.status.retrying", { title: job.title })
+        : t("ui.jobs.status.redownloading", { title: job.title }),
+      error: false,
+    });
+
+    try {
+      const response = await fetch(`/api/jobs/${job.id}/retry`, {
+        method: "POST",
+      });
+      const data = await handleJsonResponse(response);
+
+      await waitForMinimum(startedAt, 650);
+      mergeJob(data.job);
+      await refreshJobs();
+      setHomeStatus({
+        message: isRetry
+          ? t("ui.jobs.messages.retryStarted", { title: job.title })
+          : t("ui.jobs.messages.redownloadStarted", { title: job.title }),
+        error: false,
+      });
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    } finally {
+      setJobActionId("");
+    }
   }
 
   if (i18nLoading || loading.settings) {
@@ -493,6 +624,14 @@ export default function App() {
               isBusy={isBusy}
               onDownload={downloadBook}
               onRetryDownload={downloadBook}
+            />
+          ) : activePage === "jobs" ? (
+            <JobsView
+              t={t}
+              language={language}
+              jobs={jobs}
+              jobActionId={jobActionId}
+              onRestartJob={restartJob}
             />
           ) : (
             <SettingsView

@@ -6,7 +6,6 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY src ./src
-COPY web ./web
 COPY locales ./locales
 COPY frontend ./frontend
 
@@ -23,7 +22,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY src ./src
-COPY web ./web
 COPY locales ./locales
 COPY --from=builder /app/frontend/dist ./frontend/dist
 

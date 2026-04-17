@@ -543,6 +543,106 @@ button.secondary:hover {
   margin-top: 1rem;
 }
 
+.jobs-panel {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.35rem;
+  padding-top: 0.2rem;
+}
+
+.jobs-panel-header h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.12rem;
+}
+
+.jobs-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.job-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(107, 79, 47, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 28px rgba(84, 57, 32, 0.06);
+}
+
+.job-card--error {
+  border-color: rgba(161, 29, 47, 0.18);
+}
+
+.job-card--imported {
+  border-color: rgba(162, 75, 42, 0.18);
+}
+
+.job-card-main {
+  min-width: 0;
+}
+
+.job-card-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.job-card-topline strong {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.job-card-copy {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+}
+
+.job-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.job-state-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(107, 79, 47, 0.1);
+  color: var(--muted);
+}
+
+.job-state-pill--pending {
+  background: rgba(107, 79, 47, 0.1);
+  color: var(--muted);
+}
+
+.job-state-pill--downloading {
+  background: rgba(162, 75, 42, 0.12);
+  color: var(--accent-strong);
+}
+
+.job-state-pill--imported {
+  background: rgba(117, 133, 82, 0.16);
+  color: #506136;
+}
+
+.job-state-pill--error {
+  background: rgba(161, 29, 47, 0.12);
+  color: #8d1528;
+}
+
 .results.is-loading {
   min-height: 18rem;
 }
@@ -947,15 +1047,23 @@ button.secondary:hover {
     padding: 0.6rem 0.75rem;
   }
 
+  .job-card,
   .state-panel,
   .result-error-banner {
     padding: 1rem 1rem 1rem 1.05rem;
   }
 
+  .job-card,
   .result-error-banner {
     position: relative;
   }
+
+  .job-card {
+    grid-template-columns: 1fr;
+  }
+
   .state-panel-actions .secondary,
+  .job-card .secondary,
   .result-error-banner .secondary {
     width: 100%;
   }
