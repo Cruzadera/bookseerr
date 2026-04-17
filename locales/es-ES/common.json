@@ -14,16 +14,68 @@
     "bookTitle": "Título del libro",
     "searchPlaceholder": "Busca por título o autor",
     "searchButton": "Buscar",
+    "searchButtonLoading": "Buscando...",
     "requestButton": "Solicitar mejor",
+    "requestButtonLoading": "Solicitando...",
+    "downloadButtonLoading": "Descargando...",
     "noResults": "No se encontraron libros coincidentes.",
+    "noResultsHint": "Prueba con otro título, autor o relaja los filtros y busca de nuevo.",
+    "emptyStateKicker": "Sin resultados",
+    "searchErrorTitle": "No se pudieron cargar los resultados.",
+    "searchErrorDescription": "Comprueba la conexión y vuelve a intentarlo.",
+    "retrySearch": "Reintentar búsqueda",
+    "downloadErrorTitle": "La descarga falló.",
+    "downloadErrorDescription": "No se pudo enviar el elemento a qBittorrent. Puedes intentarlo de nuevo.",
+    "retryDownload": "Reintentar descarga",
+    "bestMatch": "Mejor resultado",
+    "unknownAuthor": "Autor desconocido",
+    "downloadQueued": "Descarga en cola",
     "format": "Formato",
     "seeders": "Semillas",
     "size": "Tamaño",
     "indexer": "Indexador desconocido",
+    "jobs": {
+      "kicker": "Actividad",
+      "title": "Trabajos recientes",
+      "pageSubtitle": "Sigue las descargas recientes y relanza cualquier trabajo que haya fallado o necesites repetir.",
+      "emptyKicker": "Sin actividad todavía",
+      "emptyTitle": "Aún no hay trabajos registrados.",
+      "emptyDescription": "Inicia una descarga y aparecerá aquí con su estado más reciente.",
+      "pending": "Esperando para comenzar.",
+      "downloading": "Enviado a qBittorrent y pendiente de importación.",
+      "downloadingWithShelf": "Enviado a qBittorrent para {{shelf}}.",
+      "completed": "Completado e importado correctamente.",
+      "completedWithShelf": "Completado e importado en {{shelf}}.",
+      "fallbackError": "Este trabajo falló y puede reintentarse.",
+      "actions": {
+        "retry": "Reintentar",
+        "redownload": "Volver a descargar"
+      },
+      "states": {
+        "pending": "Pendiente",
+        "downloading": "Descargando",
+        "completed": "Completado",
+        "error": "Fallido"
+      },
+      "status": {
+        "retrying": "Reintentando \"{{title}}\"...",
+        "redownloading": "Iniciando de nuevo \"{{title}}\"..."
+      },
+      "messages": {
+        "retryStarted": "Reintento iniciado para \"{{title}}\".",
+        "redownloadStarted": "Nueva descarga iniciada para \"{{title}}\"."
+      }
+    },
     "nav": {
+      "primary": "Principal",
       "home": "Inicio",
       "settings": "Configuración",
+      "recent": "Recientes",
       "morePages": "Más páginas"
+    },
+    "sidebar": {
+      "collapse": "Contraer barra lateral",
+      "expand": "Expandir barra lateral"
     },
     "shelf": {
       "destination": "Estantería de destino",
@@ -78,6 +130,12 @@
     "alerts": {
       "downloadStarted": "¡Descarga iniciada!",
       "enterBeforeRequest": "Introduce un título de libro antes de solicitar una descarga."
+    }
+  ,
+    "recent": {
+      "title": "Búsquedas recientes",
+      "clear": "Borrar historial",
+      "empty": "No hay búsquedas recientes"
     }
   },
   "errors": {
