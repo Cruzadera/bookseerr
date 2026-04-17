@@ -5,8 +5,11 @@
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
+    "build": "vite build --config frontend/vite.config.cjs",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "dev:api": "nodemon src/server.js",
+    "dev:web": "vite --config frontend/vite.config.cjs"
   },
   "engines": {
     "node": ">=18"
@@ -21,9 +24,13 @@
     "form-data": "^4.0.5",
     "i18next": "^26.0.4",
     "i18next-fs-backend": "^2.6.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "tough-cookie": "^5.1.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@vitejs/plugin-react": "^6.0.1",
+    "nodemon": "^3.1.10",
+    "vite": "^8.0.8"
   }
 }
