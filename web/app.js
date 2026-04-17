@@ -26,8 +26,12 @@ let rememberLastShelfInput;
 let quickOnlyEpubInput;
 let quickSpanishOnlyInput;
 let quickUnder20Input;
+let recentSearchesContainer;
+let recentClearButton;
 
 const LAST_SHELF_STORAGE_KEY = "bookseerr:last-destination-shelf";
+const RECENT_SEARCHES_KEY = "bookseerr:recent-searches";
+const MAX_RECENT_SEARCHES = 8;
 const DEFAULT_SETTINGS = {
   filters: {
     preferredFormat: "epub",
@@ -180,8 +184,10 @@ function initializeDOMElements() {
   settingsForm = document.getElementById("settings-form");
   resetSettingsButton = document.getElementById("reset-settings-button");
   preferredFormatSelect = document.getElementById("preferred-format");
+  recentSearchesContainer = document.getElementById("recent-searches");
   minSeedsInput = document.getElementById("min-seeds");
   maxSizeInput = document.getElementById("max-size-mb");
+  recentClearButton = document.getElementById("clear-recent-searches");
   settingsLanguageSelect = document.getElementById("settings-language");
   indexerOptionsContainer = document.getElementById("indexer-options");
   autoDownloadInput = document.getElementById("auto-download");
@@ -203,6 +209,10 @@ function setActivePage(page) {
   pageViews.forEach((view) => {
     view.classList.toggle("hidden", view.dataset.pageView !== page);
   });
+
+  if (page === "recent") {
+    renderRecentSearches();
+  }
 }
 
 function setStatus(message, isError = false) {
@@ -633,6 +643,76 @@ function applyDestinationShelfPreference() {
   }
 }
 
+function loadRecentSearches() {
+  try {
+    const raw = localStorage.getItem(RECENT_SEARCHES_KEY) || "[]";
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveRecentSearches(list) {
+  try {
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(list || []));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function renderRecentSearches() {
+  if (!recentSearchesContainer) {
+    return;
+  }
+
+  const list = loadRecentSearches();
+
+  if (!list.length) {
+    recentSearchesContainer.classList.add("hidden");
+    recentSearchesContainer.innerHTML = "";
+    return;
+  }
+
+  const label = i18n ? i18n.t("ui.recentSearches", "Recent") : "Recent";
+
+  recentSearchesContainer.classList.remove("hidden");
+  recentSearchesContainer.innerHTML = `
+    <div class="recent-searches-label">${escapeHtml(label)}</div>
+    <div class="recent-searches-list">
+      ${list
+        .map(
+          (q) =>
+            `<button type="button" class="recent-search-item" data-query="${encodeURIComponent(
+              q,
+            )}">${escapeHtml(q)}</button>`,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function addRecentSearch(query) {
+  if (!query) {
+    return;
+  }
+
+  const q = `${query}`.trim();
+  if (!q) {
+    return;
+  }
+
+  let list = loadRecentSearches();
+  list = list.filter((item) => item !== q);
+  list.unshift(q);
+  if (list.length > MAX_RECENT_SEARCHES) {
+    list = list.slice(0, MAX_RECENT_SEARCHES);
+  }
+
+  saveRecentSearches(list);
+  renderRecentSearches();
+}
+
 function populateIndexerOptions() {
   if (!indexerOptionsContainer) {
     return;
@@ -864,6 +944,11 @@ async function search() {
     const res = await fetch(buildSearchUrl(query));
     const data = await handleJsonResponse(res);
     renderResults(data);
+    try {
+      addRecentSearch(query);
+    } catch (e) {
+      // ignore storage errors
+    }
     const count = data.count || 0;
     const message = i18n
       ? i18n.t("ui.status.foundResults", { count })
@@ -1076,6 +1161,34 @@ async function requestBook(triggerButton = requestButton) {
       if (event.key === "Enter") {
         search();
       }
+    });
+  }
+
+  if (recentSearchesContainer) {
+    recentSearchesContainer.addEventListener("click", (event) => {
+      const btn = event.target.closest(".recent-search-item");
+      if (!btn) {
+        return;
+      }
+
+      const q = decodeURIComponent(btn.dataset.query || "");
+      if (!q) {
+        return;
+      }
+
+      if (searchInput) {
+        searchInput.value = q;
+      }
+
+      search();
+    });
+    renderRecentSearches();
+  }
+
+  if (recentClearButton) {
+    recentClearButton.addEventListener("click", () => {
+      saveRecentSearches([]);
+      renderRecentSearches();
     });
   }
 

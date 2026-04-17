@@ -31,12 +31,14 @@ const fallbackTranslations = {
       format: 'Format',
       seeders: 'Seeders',
       size: 'Size',
+      recentSearches: 'Recent searches',
       bestMatch: 'Best match',
       unknownAuthor: 'Unknown author',
       indexer: 'Unknown indexer',
       nav: {
         home: 'Home',
         settings: 'Settings',
+        recent: 'Recent',
         morePages: 'More pages',
       },
       shelf: {
@@ -52,6 +54,11 @@ const fallbackTranslations = {
       placeholders: {
         settings: 'Settings',
         comingSoon: 'Coming soon',
+      },
+      recent: {
+        title: 'Recent searches',
+        clear: 'Clear history',
+        empty: 'No recent searches',
       },
       settings: {
         title: 'Search and download preferences',
@@ -136,6 +143,7 @@ const fallbackTranslations = {
       retryDownload: 'Reintentar descarga',
       format: 'Formato',
       seeders: 'Semillas',
+      recentSearches: 'Búsquedas recientes',
       size: 'Tamaño',
       bestMatch: 'Mejor resultado',
       unknownAuthor: 'Autor desconocido',
@@ -143,6 +151,7 @@ const fallbackTranslations = {
       nav: {
         home: 'Inicio',
         settings: 'Configuración',
+        recent: 'Recientes',
         morePages: 'Más páginas',
       },
       shelf: {
@@ -158,6 +167,11 @@ const fallbackTranslations = {
       placeholders: {
         settings: 'Configuración',
         comingSoon: 'Próximamente',
+      },
+      recent: {
+        title: 'Búsquedas recientes',
+        clear: 'Borrar historial',
+        empty: 'No hay búsquedas recientes',
       },
       settings: {
         title: 'Preferencias de búsqueda y descarga',

@@ -40,6 +40,15 @@
               </span>
               <span class="nav-text" data-i18n="ui.nav.home">Home</span>
             </button>
+            <button type="button" class="nav-link" data-page="recent">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 6v6l4 2" />
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.2" />
+                </svg>
+              </span>
+              <span class="nav-text" data-i18n="ui.nav.recent">Recent</span>
+            </button>
             <button type="button" class="nav-link" data-page="settings">
               <span class="nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
@@ -83,6 +92,7 @@
                     autocomplete="off"
                   />
                 </label>
+                
                 <label id="destination-shelf-field" class="field field-compact hidden">
                   <span data-i18n="ui.shelf.destination">Destination shelf</span>
                   <select id="destination-shelf">
@@ -114,6 +124,23 @@
               <p id="status" class="status" role="status" aria-live="polite"></p>
 
               <div id="results" class="results"></div>
+            </section>
+          </section>
+
+          <section class="page-view hidden" data-page-view="recent">
+            <section class="panel">
+              <div class="settings-header">
+                <p class="placeholder-label" data-i18n="placeholders.settings">Recent</p>
+                <h2 data-i18n="ui.recent.title">Recent searches</h2>
+                <p class="settings-copy" data-i18n="ui.recent.empty">Browse and re-run recent queries.</p>
+              </div>
+
+              <div class="panel-content">
+                <div id="recent-searches" class="recent-searches" aria-live="polite"></div>
+                <div class="actions" style="margin-top:1rem;">
+                  <button id="clear-recent-searches" type="button" class="secondary" data-i18n="ui.recent.clear">Clear history</button>
+                </div>
+              </div>
             </section>
           </section>
 

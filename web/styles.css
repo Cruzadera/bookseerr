@@ -360,6 +360,39 @@ body {
   align-items: end;
 }
 
+.recent-searches {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.recent-searches-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.recent-searches-list {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.recent-search-item {
+  border: 1px solid rgba(107, 79, 47, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.recent-search-item:hover {
+  background: var(--accent-soft);
+}
+
 .field {
   display: grid;
   gap: 0.5rem;
