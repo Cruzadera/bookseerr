@@ -3,9 +3,12 @@ import ResultsList from "./ResultsList";
 export default function SearchView({
   t,
   query,
+  recentSearches,
   hasSearched,
   onQueryChange,
   onSearch,
+  onRecentSearchSelect,
+  onClearRecentSearches,
   onQueryKeyDown,
   onRequestBest,
   status,
@@ -74,6 +77,40 @@ export default function SearchView({
               {requestLoading ? t("ui.requestButtonLoading") : t("ui.requestButton")}
             </button>
           </div>
+        </div>
+
+        <div className="recent-searches" aria-live="polite">
+          <div className="recent-searches-header">
+            <span className="recent-searches-title">{t("ui.recent.title")}</span>
+            {recentSearches.length ? (
+              <button
+                type="button"
+                className="text-button"
+                disabled={isBusy}
+                onClick={onClearRecentSearches}
+              >
+                {t("ui.recent.clear")}
+              </button>
+            ) : null}
+          </div>
+
+          {recentSearches.length ? (
+            <div className="recent-searches-list">
+              {recentSearches.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="recent-search-chip"
+                  disabled={isBusy}
+                  onClick={() => onRecentSearchSelect(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="recent-searches-empty">{t("ui.recent.empty")}</p>
+          )}
         </div>
 
         <div className="quick-filters">
