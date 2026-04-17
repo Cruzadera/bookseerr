@@ -1,5 +1,6 @@
 const path = require("path");
 const express = require("express");
+const fs = require("fs");
 
 const errorHandler = require("./middleware/error-handler");
 const createApiRouter = require("./routes/api.routes");
@@ -22,6 +23,9 @@ async function buildSettingsPayload(services) {
 
 function createApp(services) {
   const app = express();
+  const frontendDistPath = path.join(__dirname, "../frontend/dist");
+  const legacyWebPath = path.join(__dirname, "../web");
+  const frontendPath = fs.existsSync(frontendDistPath) ? frontendDistPath : legacyWebPath;
 
   app.use(express.json());
   app.use((req, res, next) => {
@@ -69,7 +73,8 @@ function createApp(services) {
   });
 
   app.use("/locales", express.static(path.join(__dirname, "../locales")));
-  app.use("/", express.static(path.join(__dirname, "../web")));
+  app.use("/", express.static(frontendPath));
+  app.use("/", express.static(legacyWebPath));
 
   app.use(
     "/api",
