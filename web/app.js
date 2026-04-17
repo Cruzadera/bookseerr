@@ -256,6 +256,122 @@ async function ensureVisibleLoading(startTime, minimumMs = 350) {
   });
 }
 
+function getTranslation(path, fallback) {
+  return i18n ? i18n.t(path) : fallback;
+}
+
+function renderStatePanel({
+  title,
+  description,
+  tone = "neutral",
+  kicker = getTranslation("common.error", "Error"),
+  actionLabel = "",
+  actionKey = "",
+}) {
+  const actionMarkup = actionLabel
+    ? `
+      <div class="state-panel-actions">
+        <button type="button" class="secondary state-action" data-state-action="${escapeHtml(actionKey)}">
+          ${escapeHtml(actionLabel)}
+        </button>
+      </div>
+    `
+    : "";
+
+  return `
+    <div class="state-panel state-panel--${escapeHtml(tone)}">
+      <div class="state-panel-copy">
+        <p class="state-panel-kicker">${escapeHtml(kicker)}</p>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(description)}</p>
+      </div>
+      ${actionMarkup}
+    </div>
+  `;
+}
+
+function renderNoResultsState(query = "") {
+  const title = getTranslation("ui.noResults", "No matching books found.");
+  const description = query
+    ? getTranslation(
+        "ui.noResultsHint",
+        "Try another title, author, or loosen the filters and search again.",
+      )
+    : getTranslation(
+        "ui.noResultsHint",
+        "Try another title, author, or loosen the filters and search again.",
+      );
+
+  resultsContainer.innerHTML = renderStatePanel({
+    title,
+    description,
+    tone: "empty",
+    kicker: getTranslation("ui.emptyStateKicker", "No results"),
+  });
+}
+
+function renderSearchErrorState(message) {
+  const title = getTranslation("ui.searchErrorTitle", "Could not load results.");
+  const description =
+    message ||
+    getTranslation(
+      "ui.searchErrorDescription",
+      "Check your connection and try the search again.",
+    );
+
+  resultsContainer.innerHTML = renderStatePanel({
+    title,
+    description,
+    tone: "error",
+    actionLabel: getTranslation("ui.retrySearch", "Retry search"),
+    actionKey: "retry-search",
+  });
+}
+
+function clearDownloadErrorState(resultCard) {
+  if (!resultCard) {
+    return;
+  }
+
+  resultCard.classList.remove("has-download-error");
+  resultCard.querySelectorAll(".result-error-banner").forEach((banner) => banner.remove());
+}
+
+function renderDownloadErrorState(resultCard, message, title, downloadUrl, protocol) {
+  if (!resultCard) {
+    return;
+  }
+
+  clearDownloadErrorState(resultCard);
+  resultCard.classList.add("has-download-error");
+
+  const banner = document.createElement("div");
+  banner.className = "result-error-banner";
+  banner.innerHTML = `
+    <div class="result-error-copy">
+      <p class="state-panel-kicker">${escapeHtml(getTranslation("common.error", "Error"))}</p>
+      <strong>${escapeHtml(getTranslation("ui.downloadErrorTitle", "Download failed."))}</strong>
+      <p>${escapeHtml(
+        message ||
+          getTranslation(
+            "ui.downloadErrorDescription",
+            "The item could not be sent to qBittorrent. You can try again.",
+          ),
+      )}</p>
+    </div>
+    <button
+      type="button"
+      class="secondary download-retry"
+      data-title="${escapeHtml(title)}"
+      data-download-url="${encodeURIComponent(downloadUrl || "") }"
+      data-protocol="${escapeHtml(protocol || "torrent")}">
+      ${escapeHtml(getTranslation("ui.retryDownload", "Retry download"))}
+    </button>
+  `;
+
+  resultCard.prepend(banner);
+}
+
 function updateActionButtonsState() {
   const isBusy =
     uiState.loading.search || uiState.loading.request || uiState.loading.download;
@@ -268,7 +384,9 @@ function updateActionButtonsState() {
     requestButton.disabled = isBusy;
   }
 
-  document.querySelectorAll(".download-button, .request-best-inline").forEach((button) => {
+  document.querySelectorAll(
+    ".download-button, .request-best-inline, .state-action, .download-retry",
+  ).forEach((button) => {
     const isActiveLoading = button.classList.contains("is-loading");
     button.disabled = isBusy || isActiveLoading;
   });
@@ -451,9 +569,12 @@ async function handleJsonResponse(response) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(
-      data.error || (i18n ? i18n.t("errors.requestFailed") : "Request failed"),
+    const error = new Error(
+      data.error || getTranslation("errors.requestFailed", "Request failed"),
     );
+    error.status = response.status;
+    error.payload = data;
+    throw error;
   }
 
   return data;
@@ -750,8 +871,13 @@ async function search() {
     setStatus(message);
     await maybeAutoDownload(data.results || []);
   } catch (error) {
-    setStatus(error.message, true);
-    resultsContainer.innerHTML = "";
+    if (error.status === 404) {
+      renderNoResultsState(query);
+      setStatus(getTranslation("ui.noResults", "No matching books found."));
+    } else {
+      renderSearchErrorState(error.message);
+      setStatus(error.message, true);
+    }
   } finally {
     hideSearchLoading();
   }
@@ -761,8 +887,7 @@ function renderResults(data) {
   const results = Array.isArray(data.results) ? data.results : [];
 
   if (!results.length) {
-    const emptyMsg = i18n ? i18n.t("ui.noResults") : "No matching books found.";
-    resultsContainer.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+    renderNoResultsState();
     return;
   }
 
@@ -839,8 +964,10 @@ function renderResults(data) {
 
 async function downloadBook(title, downloadUrl, protocol, triggerButton = null) {
   const startedAt = Date.now();
-  showDownloadLoading(triggerButton, title);
   const resultCard = triggerButton?.closest(".result-card") || null;
+
+  clearDownloadErrorState(resultCard);
+  showDownloadLoading(triggerButton, title);
 
   if (resultCard) {
     resultCard.classList.add("is-downloading");
@@ -866,11 +993,12 @@ async function downloadBook(title, downloadUrl, protocol, triggerButton = null) 
     const data = await handleJsonResponse(res);
     const successMsg =
       data.message ||
-      (i18n ? i18n.t("ui.status.downloadSuccess") : "Download started.");
+      getTranslation("ui.status.downloadSuccess", "Download started.");
     setStatus(successMsg);
     await ensureVisibleLoading(startedAt, 650);
   } catch (error) {
     setStatus(error.message, true);
+    renderDownloadErrorState(resultCard, error.message, title, downloadUrl, protocol);
   } finally {
     if (resultCard) {
       resultCard.classList.remove("is-downloading");
@@ -953,6 +1081,25 @@ async function requestBook(triggerButton = requestButton) {
 
   if (resultsContainer) {
     resultsContainer.addEventListener("click", (event) => {
+      const stateAction = event.target.closest("[data-state-action]");
+
+      if (stateAction?.dataset.stateAction === "retry-search") {
+        search();
+        return;
+      }
+
+      const retryDownloadButton = event.target.closest(".download-retry");
+
+      if (retryDownloadButton) {
+        downloadBook(
+          retryDownloadButton.dataset.title,
+          decodeURIComponent(retryDownloadButton.dataset.downloadUrl || ""),
+          retryDownloadButton.dataset.protocol || "torrent",
+          retryDownloadButton,
+        );
+        return;
+      }
+
       const requestAction = event.target.closest(".request-best-inline");
 
       if (requestAction) {
