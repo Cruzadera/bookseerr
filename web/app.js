@@ -51,6 +51,11 @@ const uiState = {
   destinationShelfEnabled: false,
   destinationShelves: [],
   availableIndexers: [],
+  loading: {
+    search: false,
+    request: false,
+    download: false,
+  },
   settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
 };
 
@@ -209,6 +214,166 @@ function setStatus(message, isError = false) {
     element.textContent = message || "";
     element.classList.toggle("error", isError);
   });
+}
+
+function setButtonLoading(button, isLoading, loadingLabel) {
+  if (!button) {
+    return;
+  }
+
+  if (!button.dataset.originalLabel) {
+    button.dataset.originalLabel = button.textContent || "";
+  }
+
+  button.classList.toggle("is-loading", isLoading);
+  button.disabled = isLoading;
+  button.setAttribute("aria-busy", isLoading ? "true" : "false");
+
+  if (isLoading) {
+    button.textContent = loadingLabel;
+    return;
+  }
+
+  button.textContent = button.dataset.originalLabel || "";
+}
+
+function waitForPaint() {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(resolve);
+    });
+  });
+}
+
+async function ensureVisibleLoading(startTime, minimumMs = 350) {
+  const elapsed = Date.now() - startTime;
+  if (elapsed >= minimumMs) {
+    return;
+  }
+
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, minimumMs - elapsed);
+  });
+}
+
+function updateActionButtonsState() {
+  const isBusy =
+    uiState.loading.search || uiState.loading.request || uiState.loading.download;
+
+  if (searchButton) {
+    searchButton.disabled = isBusy;
+  }
+
+  if (requestButton) {
+    requestButton.disabled = isBusy;
+  }
+
+  document.querySelectorAll(".download-button, .request-best-inline").forEach((button) => {
+    const isActiveLoading = button.classList.contains("is-loading");
+    button.disabled = isBusy || isActiveLoading;
+  });
+}
+
+function setLoadingState(action, isLoading) {
+  uiState.loading[action] = isLoading;
+  updateActionButtonsState();
+}
+
+function renderSearchSkeleton() {
+  return Array.from({ length: 3 })
+    .map(
+      () => `
+        <article class="result-card skeleton-card" aria-hidden="true">
+          <div class="result-cover skeleton-block skeleton-cover"></div>
+          <div class="result-main">
+            <div class="result-head">
+              <div class="result-copy">
+                <div class="skeleton-line skeleton-line-title"></div>
+                <div class="skeleton-line skeleton-line-author"></div>
+              </div>
+              <div class="result-actions skeleton-actions">
+                <span class="skeleton-button"></span>
+              </div>
+            </div>
+            <div class="result-submeta skeleton-submeta">
+              <span class="skeleton-chip"></span>
+              <span class="skeleton-chip"></span>
+            </div>
+            <div class="meta meta-pills skeleton-pills">
+              <div class="skeleton-pill"></div>
+              <div class="skeleton-pill"></div>
+              <div class="skeleton-pill"></div>
+            </div>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function showSearchLoading() {
+  const loadingLabel = i18n ? i18n.t("ui.searchButtonLoading") : "Searching...";
+
+  setLoadingState("search", true);
+  setButtonLoading(searchButton, true, loadingLabel);
+  if (requestButton) {
+    requestButton.disabled = true;
+  }
+
+  resultsContainer.classList.add("is-loading");
+  resultsContainer.innerHTML = renderSearchSkeleton();
+  setStatus(loadingLabel);
+}
+
+function hideSearchLoading() {
+  setLoadingState("search", false);
+  setButtonLoading(
+    searchButton,
+    false,
+    i18n ? i18n.t("ui.searchButtonLoading") : "Searching...",
+  );
+  resultsContainer.classList.remove("is-loading");
+  updateActionButtonsState();
+}
+
+function showRequestLoading(button) {
+  const loadingLabel = i18n ? i18n.t("ui.requestButtonLoading") : "Requesting...";
+
+  setLoadingState("request", true);
+  setButtonLoading(button || requestButton, true, loadingLabel);
+  setStatus(loadingLabel);
+}
+
+function hideRequestLoading(button) {
+  setLoadingState("request", false);
+  setButtonLoading(
+    button || requestButton,
+    false,
+    i18n ? i18n.t("ui.requestButtonLoading") : "Requesting...",
+  );
+  updateActionButtonsState();
+}
+
+function showDownloadLoading(button, title) {
+  const loadingLabel = i18n ? i18n.t("ui.downloadButtonLoading") : "Downloading...";
+
+  setLoadingState("download", true);
+  setButtonLoading(button, true, loadingLabel);
+  setStatus(
+    i18n
+      ? i18n.t("ui.status.downloadStarting", { title })
+      : `Starting download for "${title}"...`,
+  );
+}
+
+function hideDownloadLoading(button) {
+  setLoadingState("download", false);
+  setButtonLoading(
+    button,
+    false,
+    i18n ? i18n.t("ui.downloadButtonLoading") : "Downloading...",
+  );
+  updateActionButtonsState();
 }
 
 function setSidebarCollapsed(isCollapsed) {
@@ -568,8 +733,11 @@ async function search() {
     return;
   }
 
-  setStatus(i18n ? i18n.t("ui.status.searching") : "Searching...");
-  resultsContainer.innerHTML = "";
+  if (uiState.loading.search) {
+    return;
+  }
+
+  showSearchLoading();
 
   try {
     const res = await fetch(buildSearchUrl(query));
@@ -583,6 +751,9 @@ async function search() {
     await maybeAutoDownload(data.results || []);
   } catch (error) {
     setStatus(error.message, true);
+    resultsContainer.innerHTML = "";
+  } finally {
+    hideSearchLoading();
   }
 }
 
@@ -617,7 +788,7 @@ function renderResults(data) {
         index === 0 ? `<span class="result-badge">${escapeHtml(bestMatchLabel)}</span>` : "";
 
       return `
-        <article class="result-card ${index === 0 ? "is-featured" : ""}">
+        <article class="result-card ${index === 0 ? "is-featured" : ""}" data-result-title="${escapeHtml(item.title)}">
           ${buildCoverMarkup(item)}
           <div class="result-main">
             <div class="result-head">
@@ -666,11 +837,16 @@ function renderResults(data) {
     .join("");
 }
 
-async function downloadBook(title, downloadUrl, protocol) {
-  const msg = i18n
-    ? i18n.t("ui.status.downloadStarting", { title })
-    : `Starting download for "${title}"...`;
-  setStatus(msg);
+async function downloadBook(title, downloadUrl, protocol, triggerButton = null) {
+  const startedAt = Date.now();
+  showDownloadLoading(triggerButton, title);
+  const resultCard = triggerButton?.closest(".result-card") || null;
+
+  if (resultCard) {
+    resultCard.classList.add("is-downloading");
+  }
+
+  await waitForPaint();
 
   try {
     const destinationId = getSelectedDestinationShelf();
@@ -692,12 +868,19 @@ async function downloadBook(title, downloadUrl, protocol) {
       data.message ||
       (i18n ? i18n.t("ui.status.downloadSuccess") : "Download started.");
     setStatus(successMsg);
+    await ensureVisibleLoading(startedAt, 650);
   } catch (error) {
     setStatus(error.message, true);
+  } finally {
+    if (resultCard) {
+      resultCard.classList.remove("is-downloading");
+    }
+    hideDownloadLoading(triggerButton);
   }
 }
 
-async function requestBook() {
+async function requestBook(triggerButton = requestButton) {
+  const startedAt = Date.now();
   const query = searchInput.value.trim();
 
   if (!query) {
@@ -708,8 +891,13 @@ async function requestBook() {
     return;
   }
 
-  const msg = i18n ? i18n.t("ui.status.requesting") : "Looking for the best match...";
-  setStatus(msg);
+  if (uiState.loading.request) {
+    return;
+  }
+
+  showRequestLoading(triggerButton);
+
+  await waitForPaint();
 
   try {
     const destinationId = getSelectedDestinationShelf();
@@ -726,8 +914,11 @@ async function requestBook() {
       ? i18n.t("ui.status.requestSuccess", { title: data.selected })
       : `Download started for "${data.selected}".`;
     setStatus(successMsg);
+    await ensureVisibleLoading(startedAt, 650);
   } catch (error) {
     setStatus(error.message, true);
+  } finally {
+    hideRequestLoading(triggerButton);
   }
 }
 
@@ -749,7 +940,7 @@ async function requestBook() {
   }
 
   if (requestButton) {
-    requestButton.addEventListener("click", requestBook);
+    requestButton.addEventListener("click", () => requestBook(requestButton));
   }
 
   if (searchInput) {
@@ -765,7 +956,7 @@ async function requestBook() {
       const requestAction = event.target.closest(".request-best-inline");
 
       if (requestAction) {
-        requestBook();
+        requestBook(requestAction);
         return;
       }
 
@@ -779,6 +970,7 @@ async function requestBook() {
         button.dataset.title,
         decodeURIComponent(button.dataset.downloadUrl || ""),
         button.dataset.protocol || "torrent",
+        button,
       );
     });
   }

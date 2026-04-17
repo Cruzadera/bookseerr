@@ -61,6 +61,7 @@ body {
   position: sticky;
   left: 0;
   top: 1rem;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -406,6 +407,7 @@ select:focus {
 }
 
 button {
+  position: relative;
   border: 0;
   border-radius: 14px;
   padding: 0.95rem 1.2rem;
@@ -420,6 +422,32 @@ button {
 button:hover {
   background: var(--accent-strong);
   transform: translateY(-1px);
+}
+
+button:disabled,
+button.is-loading {
+  cursor: progress;
+  opacity: 0.72;
+  transform: none;
+}
+
+button:disabled:hover,
+button.is-loading:hover {
+  background: var(--accent);
+  transform: none;
+}
+
+button.is-loading::before {
+  content: "";
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-right: 0.55rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.12rem;
+  animation: spin 0.7s linear infinite;
 }
 
 button.secondary {
@@ -447,6 +475,10 @@ button.secondary:hover {
   margin-top: 1rem;
 }
 
+.results.is-loading {
+  min-height: 18rem;
+}
+
 .result-card,
 .empty-state {
   padding: 1.05rem 1.1rem;
@@ -465,6 +497,135 @@ button.secondary:hover {
 .result-card.is-featured {
   border-color: rgba(162, 75, 42, 0.28);
   box-shadow: 0 14px 32px rgba(84, 57, 32, 0.08);
+}
+
+.result-card.is-downloading {
+  border-color: rgba(162, 75, 42, 0.42);
+  box-shadow: 0 0 0 1px rgba(162, 75, 42, 0.12), 0 16px 34px rgba(84, 57, 32, 0.12);
+}
+
+.result-card.is-downloading .result-main {
+  position: relative;
+}
+
+.result-card.is-downloading .result-main::before {
+  content: "Download queued";
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.7rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(162, 75, 42, 0.12);
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.skeleton-card {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.results.is-loading .result-card {
+  animation: pulse-card 1.2s ease-in-out infinite;
+}
+
+.skeleton-block,
+.skeleton-line,
+.skeleton-button,
+.skeleton-chip,
+.skeleton-pill {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #eee2d7 0%, #f9f2eb 48%, #eee2d7 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.25s ease-in-out infinite;
+}
+
+.skeleton-cover {
+  border-radius: 14px;
+}
+
+.skeleton-line {
+  border-radius: 999px;
+}
+
+.skeleton-line-title {
+  width: min(18rem, 72%);
+  height: 1.15rem;
+  margin-top: 0.2rem;
+}
+
+.skeleton-line-author {
+  width: min(12rem, 48%);
+  height: 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.skeleton-button {
+  width: 7.5rem;
+  height: 2.8rem;
+  border-radius: 14px;
+}
+
+.skeleton-submeta,
+.skeleton-pills {
+  align-items: center;
+}
+
+.skeleton-chip {
+  display: inline-block;
+  width: 6.5rem;
+  height: 0.8rem;
+  border-radius: 999px;
+}
+
+.skeleton-pill {
+  min-width: 5.2rem;
+  height: 3rem;
+  border-radius: 12px;
+}
+
+.skeleton-pills div {
+  border: 0;
+  background: transparent;
+}
+
+.skeleton-pills .skeleton-pill {
+  background: linear-gradient(90deg, #eee2d7 0%, #f9f2eb 48%, #eee2d7 100%);
+}
+
+.skeleton-actions {
+  align-items: center;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-card {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-1px);
+  }
 }
 
 .result-cover {
