@@ -19,14 +19,30 @@
     "requestButtonLoading": "Solicitando...",
     "downloadButtonLoading": "Descargando...",
     "noResults": "No se encontraron libros coincidentes.",
+    "noResultsHint": "Prueba con otro título, autor o relaja los filtros y busca de nuevo.",
+    "emptyStateKicker": "Sin resultados",
+    "searchErrorTitle": "No se pudieron cargar los resultados.",
+    "searchErrorDescription": "Comprueba la conexión y vuelve a intentarlo.",
+    "retrySearch": "Reintentar búsqueda",
+    "downloadErrorTitle": "La descarga falló.",
+    "downloadErrorDescription": "No se pudo enviar el elemento a qBittorrent. Puedes intentarlo de nuevo.",
+    "retryDownload": "Reintentar descarga",
+    "bestMatch": "Mejor resultado",
+    "unknownAuthor": "Autor desconocido",
+    "downloadQueued": "Descarga en cola",
     "format": "Formato",
     "seeders": "Semillas",
     "size": "Tamaño",
     "indexer": "Indexador desconocido",
     "nav": {
+      "primary": "Principal",
       "home": "Inicio",
       "settings": "Configuración",
       "morePages": "Más páginas"
+    },
+    "sidebar": {
+      "collapse": "Contraer barra lateral",
+      "expand": "Expandir barra lateral"
     },
     "shelf": {
       "destination": "Estantería de destino",

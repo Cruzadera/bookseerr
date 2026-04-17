@@ -19,14 +19,30 @@
     "requestButtonLoading": "Requesting...",
     "downloadButtonLoading": "Downloading...",
     "noResults": "No matching books found.",
+    "noResultsHint": "Try another title, author, or loosen the filters and search again.",
+    "emptyStateKicker": "No results",
+    "searchErrorTitle": "Could not load results.",
+    "searchErrorDescription": "Check your connection and try the search again.",
+    "retrySearch": "Retry search",
+    "downloadErrorTitle": "Download failed.",
+    "downloadErrorDescription": "The item could not be sent to qBittorrent. You can try again.",
+    "retryDownload": "Retry download",
+    "bestMatch": "Best match",
+    "unknownAuthor": "Unknown author",
+    "downloadQueued": "Download queued",
     "format": "Format",
     "seeders": "Seeders",
     "size": "Size",
     "indexer": "Unknown indexer",
     "nav": {
+      "primary": "Primary",
       "home": "Home",
       "settings": "Settings",
       "morePages": "More pages"
+    },
+    "sidebar": {
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar"
     },
     "shelf": {
       "destination": "Destination shelf",
