@@ -38,6 +38,7 @@
       "primary": "Principal",
       "home": "Inicio",
       "settings": "Configuración",
+      "recent": "Recientes",
       "morePages": "Más páginas"
     },
     "sidebar": {
@@ -97,6 +98,12 @@
     "alerts": {
       "downloadStarted": "¡Descarga iniciada!",
       "enterBeforeRequest": "Introduce un título de libro antes de solicitar una descarga."
+    }
+  ,
+    "recent": {
+      "title": "Búsquedas recientes",
+      "clear": "Borrar historial",
+      "empty": "No hay búsquedas recientes"
     }
   },
   "errors": {

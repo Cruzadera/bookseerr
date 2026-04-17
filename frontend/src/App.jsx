@@ -11,6 +11,9 @@ import {
   normalizeSettings,
 } from "./lib/settings";
 
+const RECENT_SEARCHES_STORAGE_KEY = "bookseerr:recent-searches";
+const RECENT_SEARCHES_LIMIT = 8;
+
 function waitForMinimum(startedAt, durationMs) {
   const elapsed = Date.now() - startedAt;
   const remaining = durationMs - elapsed;
@@ -60,6 +63,25 @@ export default function App() {
   const [activePage, setActivePage] = useState("home");
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState("");
+  const [recentSearches, setRecentSearches] = useState(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const storedValue = window.localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
+      const parsedValue = JSON.parse(storedValue || "[]");
+
+      return Array.isArray(parsedValue)
+        ? parsedValue
+            .map((value) => `${value || ""}`.trim())
+            .filter(Boolean)
+            .slice(0, RECENT_SEARCHES_LIMIT)
+        : [];
+    } catch {
+      return [];
+    }
+  });
   const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState([]);
   const [searchError, setSearchError] = useState("");
@@ -96,6 +118,17 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = `${language || "en"}`.split("-")[0];
   }, [language]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      RECENT_SEARCHES_STORAGE_KEY,
+      JSON.stringify(recentSearches),
+    );
+  }, [recentSearches]);
 
   useEffect(() => {
     let cancelled = false;
@@ -259,8 +292,19 @@ export default function App() {
     await downloadBook(best);
   }
 
-  async function performSearch() {
-    const trimmedQuery = query.trim();
+  function saveRecentSearch(searchQuery) {
+    setRecentSearches((current) => [
+      searchQuery,
+      ...current.filter((item) => item.toLowerCase() !== searchQuery.toLowerCase()),
+    ].slice(0, RECENT_SEARCHES_LIMIT));
+  }
+
+  function clearRecentSearches() {
+    setRecentSearches([]);
+  }
+
+  async function performSearch(nextQuery = query) {
+    const trimmedQuery = `${nextQuery || ""}`.trim();
 
     if (!trimmedQuery) {
       setHasSearched(false);
@@ -278,6 +322,8 @@ export default function App() {
     setHasSearched(true);
     setSearchError("");
     setResultErrors({});
+    setQuery(trimmedQuery);
+    saveRecentSearch(trimmedQuery);
     setHomeStatus({ message: t("ui.searchButtonLoading"), error: false });
 
     try {
@@ -416,9 +462,12 @@ export default function App() {
             <SearchView
               t={t}
               query={query}
+              recentSearches={recentSearches}
               hasSearched={hasSearched}
               onQueryChange={setQuery}
               onSearch={performSearch}
+              onRecentSearchSelect={performSearch}
+              onClearRecentSearches={clearRecentSearches}
               onQueryKeyDown={(event) => {
                 if (event.key === "Enter") {
                   performSearch();

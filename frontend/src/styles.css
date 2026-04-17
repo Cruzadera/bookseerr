@@ -409,6 +409,64 @@ select:focus {
   flex-wrap: wrap;
 }
 
+.recent-searches {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.recent-searches-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.recent-searches-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.recent-searches-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.recent-search-chip {
+  padding: 0.7rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(255, 248, 243, 0.85);
+  color: var(--accent-strong);
+  border: 1px solid rgba(107, 79, 47, 0.16);
+  box-shadow: none;
+}
+
+.recent-search-chip:hover {
+  background: rgba(255, 240, 229, 0.98);
+}
+
+.recent-searches-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+  box-shadow: none;
+}
+
+.text-button:hover {
+  background: transparent;
+  color: var(--accent-strong);
+}
+
 button {
   position: relative;
   border: 0;
