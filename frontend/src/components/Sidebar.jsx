@@ -14,6 +14,14 @@ function SettingsIcon() {
   );
 }
 
+function JobsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="M5 5h14v3H5zm0 5h14v3H5zm0 5h9v3H5z" />
+    </svg>
+  );
+}
+
 function BookmarkIcon() {
   return (
     <svg viewBox="0 0 24 24" focusable="false">
@@ -31,6 +39,7 @@ export default function Sidebar({
 }) {
   const navigation = [
     { id: "home", label: t("ui.nav.home"), icon: <HomeIcon /> },
+    { id: "jobs", label: t("ui.nav.recent"), icon: <JobsIcon /> },
     { id: "settings", label: t("ui.nav.settings"), icon: <SettingsIcon /> },
   ];
 

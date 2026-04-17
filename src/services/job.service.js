@@ -12,10 +12,13 @@ class JobService {
       title: payload.title,
       downloadUrl: payload.downloadUrl,
       protocol: payload.protocol,
+      category: payload.category || null,
+      savePath: payload.savePath || null,
       destinationId: payload.destinationId || null,
       destinationLabel: payload.destinationLabel || null,
       calibreShelf: payload.calibreShelf || null,
       calibreShelfId: payload.calibreShelfId || null,
+      retryOf: payload.retryOf || null,
       state: "pending",
       source: "api",
       filePath: null,
@@ -72,6 +75,10 @@ class JobService {
 
   listJobs() {
     return this.stateRepository.listJobs();
+  }
+
+  getJob(jobId) {
+    return this.stateRepository.getJob(jobId);
   }
 }
 

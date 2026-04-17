@@ -34,6 +34,38 @@
     "seeders": "Seeders",
     "size": "Size",
     "indexer": "Unknown indexer",
+    "jobs": {
+      "kicker": "Activity",
+      "title": "Recent jobs",
+      "pageSubtitle": "Track recent downloads and restart anything that failed or needs to run again.",
+      "emptyKicker": "No activity yet",
+      "emptyTitle": "No tracked jobs yet.",
+      "emptyDescription": "Start a download and it will appear here with its latest status.",
+      "pending": "Waiting to start.",
+      "downloading": "Sent to qBittorrent and waiting for import.",
+      "downloadingWithShelf": "Sent to qBittorrent for {{shelf}}.",
+      "completed": "Completed and imported successfully.",
+      "completedWithShelf": "Completed and imported into {{shelf}}.",
+      "fallbackError": "This job failed and can be retried.",
+      "actions": {
+        "retry": "Retry",
+        "redownload": "Re-download"
+      },
+      "states": {
+        "pending": "Pending",
+        "downloading": "Downloading",
+        "completed": "Completed",
+        "error": "Failed"
+      },
+      "status": {
+        "retrying": "Retrying \"{{title}}\"...",
+        "redownloading": "Starting \"{{title}}\" again..."
+      },
+      "messages": {
+        "retryStarted": "Retry started for \"{{title}}\".",
+        "redownloadStarted": "Re-download started for \"{{title}}\"."
+      }
+    },
     "nav": {
       "primary": "Primary",
       "home": "Home",

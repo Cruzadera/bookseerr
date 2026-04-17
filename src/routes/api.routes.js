@@ -88,6 +88,7 @@ function createApiRouter({
     category,
     savePath,
     destinationId,
+    retryOf,
   }) {
     const destinationShelf = validateDestinationShelf(destinationId);
 
@@ -95,9 +96,13 @@ function createApiRouter({
       title,
       downloadUrl,
       protocol,
+      category,
+      savePath,
       destinationId: destinationShelf?.id || null,
       destinationLabel: destinationShelf?.label || null,
       calibreShelf: destinationShelf?.calibreShelf || null,
+      calibreShelfId: destinationShelf?.calibreShelfId || null,
+      retryOf: retryOf || null,
     });
 
     await jobService.updateJob(job.id, { state: "downloading" });
@@ -113,9 +118,12 @@ function createApiRouter({
 
       const updated = await jobService.updateJob(job.id, {
         state: "downloading",
+        category: category || null,
+        savePath: destinationShelf?.qbSavePath || savePath || null,
         destinationId: destinationShelf?.id || null,
         destinationLabel: destinationShelf?.label || null,
         calibreShelf: destinationShelf?.calibreShelf || null,
+        calibreShelfId: destinationShelf?.calibreShelfId || null,
       });
 
       return {
@@ -233,6 +241,49 @@ function createApiRouter({
   router.get("/jobs", (req, res) => {
     res.json({ jobs: jobService.listJobs() });
   });
+
+  router.post(
+    "/jobs/:jobId/retry",
+    asyncHandler(async (req, res) => {
+      const sourceJob = jobService.getJob(req.params.jobId);
+
+      if (!sourceJob) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      if (!sourceJob.downloadUrl) {
+        return res.status(409).json({
+          error: "This job cannot be restarted because it has no stored download data",
+        });
+      }
+
+      if (!["error", "imported"].includes(sourceJob.state)) {
+        return res.status(409).json({
+          error: "Only failed or completed jobs can be restarted",
+        });
+      }
+
+      const started = await startDownload({
+        title: sourceJob.title,
+        downloadUrl: sourceJob.downloadUrl,
+        protocol: sourceJob.protocol || "torrent",
+        category: sourceJob.category || undefined,
+        savePath: sourceJob.savePath || undefined,
+        destinationId: sourceJob.destinationId || undefined,
+        retryOf: sourceJob.id,
+      });
+
+      return res.status(202).json({
+        message:
+          sourceJob.state === "error"
+            ? "Download retried"
+            : "Download started again",
+        sourceJob,
+        job: started.job,
+        qbittorrent: started.qbittorrent,
+      });
+    }),
+  );
 
   return router;
 }
