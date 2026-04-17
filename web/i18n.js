@@ -20,6 +20,14 @@ const fallbackTranslations = {
       searchButton: 'Search',
       requestButton: 'Request best',
       noResults: 'No matching books found.',
+      emptyStateKicker: 'No results',
+      noResultsHint: 'Try another title, author, or loosen the filters and search again.',
+      searchErrorTitle: 'Could not load results.',
+      searchErrorDescription: 'Check your connection and try the search again.',
+      retrySearch: 'Retry search',
+      downloadErrorTitle: 'Download failed.',
+      downloadErrorDescription: 'The item could not be sent to qBittorrent. You can try again.',
+      retryDownload: 'Retry download',
       format: 'Format',
       seeders: 'Seeders',
       size: 'Size',
@@ -72,6 +80,9 @@ const fallbackTranslations = {
         spanish: 'Spanish',
         english: 'English',
       },
+      searchButtonLoading: 'Searching...',
+      requestButtonLoading: 'Requesting...',
+      downloadButtonLoading: 'Downloading...',
       status: {
         searching: 'Searching...',
         enterTitle: 'Enter a book title to search.',
@@ -115,6 +126,14 @@ const fallbackTranslations = {
       searchButton: 'Buscar',
       requestButton: 'Solicitar mejor',
       noResults: 'No se encontraron libros coincidentes.',
+      emptyStateKicker: 'Sin resultados',
+      noResultsHint: 'Prueba con otro título, autor o relaja los filtros y vuelve a buscar.',
+      searchErrorTitle: 'No se pudieron cargar los resultados.',
+      searchErrorDescription: 'Revisa tu conexión e intenta la búsqueda de nuevo.',
+      retrySearch: 'Reintentar búsqueda',
+      downloadErrorTitle: 'La descarga falló.',
+      downloadErrorDescription: 'No se pudo enviar el elemento a qBittorrent. Puedes intentarlo de nuevo.',
+      retryDownload: 'Reintentar descarga',
       format: 'Formato',
       seeders: 'Semillas',
       size: 'Tamaño',
@@ -167,6 +186,9 @@ const fallbackTranslations = {
         spanish: 'Español',
         english: 'Inglés',
       },
+      searchButtonLoading: 'Buscando...',
+      requestButtonLoading: 'Solicitando...',
+      downloadButtonLoading: 'Descargando...',
       status: {
         searching: 'Buscando...',
         enterTitle: 'Introduce un título de libro para buscar.',
@@ -306,9 +328,10 @@ async function initI18n() {
       const keys = key.split('.');
       const normalizedLanguage = normalizeLanguage(this.currentLanguage);
       const localizedSource = this.translations[normalizedLanguage] || {};
-      const fallbackSource = this.translations.en || {};
-      const value = resolveNestedTranslation(localizedSource, keys)
-        ?? resolveNestedTranslation(fallbackSource, keys);
+      const fallbackSource = fallbackTranslations.en || {};
+      const value =
+        resolveNestedTranslation(localizedSource, keys) ||
+        resolveNestedTranslation(fallbackSource, keys);
 
       if (value === undefined) {
         console.warn('[i18n] Translation key not found:', key, 'for language:', normalizedLanguage);
