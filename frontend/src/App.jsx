@@ -61,6 +61,22 @@ function normalizeRecentSearches(values) {
     .slice(0, RECENT_SEARCHES_LIMIT);
 }
 
+function normalizeSearchQueryInput(value, fallback = "") {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    ("nativeEvent" in value || "target" in value || "currentTarget" in value)
+  ) {
+    return fallback;
+  }
+
+  return `${value || fallback}`;
+}
+
 function waitForMinimum(startedAt, durationMs) {
   const elapsed = Date.now() - startedAt;
   const remaining = durationMs - elapsed;
@@ -396,7 +412,7 @@ export default function App() {
   }
 
   async function performSearch(nextQuery = query) {
-    const trimmedQuery = `${nextQuery || ""}`.trim();
+    const trimmedQuery = normalizeSearchQueryInput(nextQuery, query).trim();
 
     if (!trimmedQuery) {
       setHasSearched(false);
