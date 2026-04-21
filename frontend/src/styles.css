@@ -315,7 +315,7 @@ body {
 }
 
 .panel {
-  max-width: 860px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem;
   border: 1px solid var(--panel-border);
@@ -354,7 +354,8 @@ body {
 
 .search-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem) auto;
+  /* make the first column (input) larger and the second (select) smaller */
+  grid-template-columns: minmax(20rem, 1fr) minmax(10rem, 16rem) auto;
   gap: 1rem;
   align-items: end;
 }
@@ -396,7 +397,8 @@ select:focus {
 }
 
 .field-compact {
-  min-width: 15rem;
+  /* compact fields (like the shelf select) should be smaller than the main input */
+  min-width: 12rem;
 }
 
 .hidden {
