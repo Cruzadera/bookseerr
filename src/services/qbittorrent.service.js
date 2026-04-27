@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { wrapper } = require("axios-cookiejar-support");
 const { CookieJar } = require("tough-cookie");
+const FormData = require("form-data");
 
 class QBittorrentService {
   constructor({ config, logger }) {
@@ -51,6 +52,31 @@ class QBittorrentService {
         Origin: this.client.defaults.baseURL,
       },
     });
+  }
+
+  async submitAddTorrentFile({ fileBuffer, filename, category, savePath }) {
+    const form = new FormData();
+
+    form.append("torrents", fileBuffer, {
+      filename: filename || "file.torrent",
+      contentType: "application/x-bittorrent",
+    });
+
+    if (category) {
+      form.append("category", category);
+    }
+
+    if (savePath) {
+      form.append("savepath", savePath);
+    }
+
+    const headers = {
+      ...form.getHeaders(),
+      Referer: this.client.defaults.baseURL,
+      Origin: this.client.defaults.baseURL,
+    };
+
+    await this.client.post("/api/v2/torrents/add", form, { headers });
   }
 
   async login() {
@@ -116,53 +142,121 @@ class QBittorrentService {
         }
       }
 
-      if (!finalUrl.startsWith("magnet:")) {
-        throw new Error("Could not obtain a valid magnet link");
-      }
-
-      this.logger.info("Sending magnet to qBittorrent", {
-        destinationId: target.destinationId,
-        destinationLabel: target.destinationLabel,
-        category: target.category,
-        savePath: target.savePath,
-      });
-
-      try {
-        await this.submitAddTorrent({
-          finalUrl,
+      // If we have a magnet link, use the magnet flow
+      if (finalUrl.startsWith("magnet:")) {
+        this.logger.info("Sending magnet to qBittorrent", {
+          destinationId: target.destinationId,
+          destinationLabel: target.destinationLabel,
           category: target.category,
           savePath: target.savePath,
         });
-      } catch (error) {
-        if (error.response?.status === 403 && target.savePath) {
-          this.logger.warn("qBittorrent rejected the path, retrying once", {
-            destinationId: target.destinationId,
-            destinationLabel: target.destinationLabel,
-            category: target.category,
-            savePath: target.savePath,
-            status: error.response.status,
-          });
 
-          await this.delay(1200);
-          await this.login();
+        try {
           await this.submitAddTorrent({
             finalUrl,
             category: target.category,
             savePath: target.savePath,
           });
-        } else {
-          throw error;
+        } catch (error) {
+          if (error.response?.status === 403 && target.savePath) {
+            this.logger.warn("qBittorrent rejected the path, retrying once", {
+              destinationId: target.destinationId,
+              destinationLabel: target.destinationLabel,
+              category: target.category,
+              savePath: target.savePath,
+              status: error.response.status,
+            });
+
+            await this.delay(1200);
+            await this.login();
+            await this.submitAddTorrent({
+              finalUrl,
+              category: target.category,
+              savePath: target.savePath,
+            });
+          } else {
+            throw error;
+          }
         }
+
+        return {
+          accepted: true,
+          type: "magnet",
+          category: target.category,
+          savePath: target.savePath,
+          destinationId: target.destinationId,
+          destinationLabel: target.destinationLabel,
+        };
       }
 
-      return {
-        accepted: true,
-        type: "magnet",
-        category: target.category,
-        savePath: target.savePath,
-        destinationId: target.destinationId,
-        destinationLabel: target.destinationLabel,
-      };
+      // Otherwise treat as a .torrent URL: download the file and upload it to qBittorrent
+      try {
+        const res = await axios.get(finalUrl, {
+          responseType: "arraybuffer",
+          maxRedirects: 5,
+          validateStatus: (s) => s >= 200 && s < 400,
+        });
+
+        const contentType = (res.headers["content-type"] || "").toLowerCase();
+        const isTorrentByType = contentType.includes("application/x-bittorrent");
+        const isTorrentByName = finalUrl.toLowerCase().endsWith(".torrent");
+
+        if (!res.data || (!isTorrentByType && !isTorrentByName)) {
+          throw new Error("Downloaded resource is not a .torrent file");
+        }
+
+        const fileBuffer = Buffer.from(res.data);
+        const filename = (finalUrl.split("/").pop() || "file.torrent").split("?")[0];
+
+        this.logger.info("Uploading .torrent file to qBittorrent", {
+          destinationId: target.destinationId,
+          destinationLabel: target.destinationLabel,
+          category: target.category,
+          savePath: target.savePath,
+          filename,
+        });
+
+        try {
+          await this.submitAddTorrentFile({
+            fileBuffer,
+            filename,
+            category: target.category,
+            savePath: target.savePath,
+          });
+        } catch (error) {
+          if (error.response?.status === 403 && target.savePath) {
+            this.logger.warn("qBittorrent rejected the path for torrent file, retrying once", {
+              destinationId: target.destinationId,
+              destinationLabel: target.destinationLabel,
+              category: target.category,
+              savePath: target.savePath,
+              status: error.response.status,
+            });
+
+            await this.delay(1200);
+            await this.login();
+            await this.submitAddTorrentFile({
+              fileBuffer,
+              filename,
+              category: target.category,
+              savePath: target.savePath,
+            });
+          } else {
+            throw error;
+          }
+        }
+
+        return {
+          accepted: true,
+          type: "torrent",
+          category: target.category,
+          savePath: target.savePath,
+          destinationId: target.destinationId,
+          destinationLabel: target.destinationLabel,
+        };
+      } catch (err) {
+        throw err;
+      }
 
     } catch (e) {
       const target = this.buildTargetContext({
