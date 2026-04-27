@@ -49,6 +49,27 @@ export default function SettingsView({
     updateSection("filters", "indexers", [...nextValues]);
   }
 
+  function addToPriority(indexer) {
+    const next = [...(settings.filters.indexerPriority || [])];
+    if (!next.includes(indexer)) next.push(indexer);
+    updateSection("filters", "indexerPriority", next);
+  }
+
+  function removeFromPriority(indexer) {
+    const next = (settings.filters.indexerPriority || []).filter((i) => i !== indexer);
+    updateSection("filters", "indexerPriority", next);
+  }
+
+  function movePriority(indexer, dir) {
+    const next = [...(settings.filters.indexerPriority || [])];
+    const idx = next.indexOf(indexer);
+    if (idx < 0) return;
+    const swap = idx + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    updateSection("filters", "indexerPriority", next);
+  }
+
   return (
     <section className="page-view">
       <section className="panel settings-panel">
@@ -231,6 +252,53 @@ export default function SettingsView({
                 ) : (
                   <p className="empty-note">{t("ui.settings.noIndexers")}</p>
                 )}
+              </div>
+
+              <div className="settings-subgroup">
+                <h4>{t("ui.settings.indexerPriorityTitle") || "Indexer Priority"}</h4>
+                <p className="field-help">{t("ui.settings.indexerPriorityHelp") || "Order selected indexers by priority (top = highest)."}</p>
+
+                <div className="indexer-priority">
+                  <div className="priority-list">
+                    <h5>{t("ui.settings.priorityList") || "Priority"}</h5>
+                    {(settings.filters.indexerPriority || []).length ? (
+                      <ul>
+                        {settings.filters.indexerPriority.map((idx) => (
+                          <li key={idx} className="priority-item">
+                            <span className="indexer-name">{idx}</span>
+                            <div className="priority-actions">
+                              <button type="button" onClick={() => movePriority(idx, -1)} aria-label="Move up">↑</button>
+                              <button type="button" onClick={() => movePriority(idx, 1)} aria-label="Move down">↓</button>
+                              <button type="button" onClick={() => removeFromPriority(idx)} aria-label="Remove">✕</button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="empty-note">{t("ui.settings.noPrioritySet") || "No indexer priority set."}</p>
+                    )}
+                  </div>
+
+                  <div className="available-list">
+                    <h5>{t("ui.settings.availableIndexers") || "Available"}</h5>
+                    <ul>
+                      {availableIndexers.map((idx) => (
+                        <li key={idx} className="available-item">
+                          <span className="indexer-name">{idx}</span>
+                          <div className="priority-actions">
+                            <button
+                              type="button"
+                              onClick={() => addToPriority(idx)}
+                              disabled={(settings.filters.indexerPriority || []).includes(idx)}
+                            >
+                              {t("ui.settings.add") || "Add"}
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
             </section>
           </div>
