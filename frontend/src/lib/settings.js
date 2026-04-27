@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     preferredFormat: "epub",
     excludedFormats: ["pdf"],
     indexers: [],
+    indexerPriority: [],
     minSeeds: 5,
     maxSizeMB: 50,
     language: "any",
@@ -114,6 +115,7 @@ export function normalizeSettings(candidate = {}) {
         ),
       ],
       indexers: normalizeStringArray(merged.filters?.indexers),
+      indexerPriority: normalizeStringArray(merged.filters?.indexerPriority),
       minSeeds: normalizeNumber(
         merged.filters?.minSeeds,
         DEFAULT_SETTINGS.filters.minSeeds,

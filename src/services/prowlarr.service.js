@@ -4,6 +4,7 @@ const DEFAULT_FILTERS = {
   preferredFormat: "epub",
   excludedFormats: ["pdf"],
   indexers: [],
+  indexerPriority: [],
   minSeeds: 5,
   maxSizeMB: 50,
   language: "any",
@@ -135,6 +136,14 @@ class ProwlarrService {
           .map((item) => normalizeIndexerName(item))
           .filter(Boolean),
       ),
+      indexerPriority: Array.isArray(filters.indexerPriority)
+        ? (() => {
+            const seen = new Set();
+            return filters.indexerPriority
+              .map((i) => normalizeIndexerName(i))
+              .filter((n) => n && !seen.has(n) && seen.add(n));
+          })()
+        : [],
       minSeeds: Math.max(0, Number(filters.minSeeds ?? DEFAULT_FILTERS.minSeeds) || 0),
       maxSizeMB: Math.max(
         0,
@@ -224,7 +233,25 @@ class ProwlarrService {
       score += 20;
     }
 
+    // Seeders: up to 100 points (caps to avoid domination)
     score += Math.min(item.seeders || 0, 100);
+
+    // File size: prefer smaller files (scaled 0..30)
+    const sizeMB = Number(item.sizeMB || 0);
+    const sizeScore = sizeMB > 0
+      ? Math.max(0, Math.round(30 * (1 - Math.min(sizeMB, 300) / 300)))
+      : 0;
+    score += sizeScore;
+
+    // Indexer priority: optional ordered list in filters.indexerPriority
+    if (Array.isArray(filters.indexerPriority) && filters.indexerPriority.length) {
+      const idxName = normalizeIndexerName(item.indexer || "");
+      const pos = filters.indexerPriority.indexOf(idxName);
+      if (pos >= 0) {
+        // Higher bonus for earlier (higher-priority) indexers
+        score += (filters.indexerPriority.length - pos) * 10;
+      }
+    }
 
     return score;
   }
@@ -307,7 +334,8 @@ class ProwlarrService {
           (b.seeders || 0) - (a.seeders || 0) ||
           (a.sizeMB || 0) - (b.sizeMB || 0),
       )
-      .map(({ raw, score, ...item }) => item);
+      // Keep the computed `score` on the returned items so callers can inspect it
+      .map(({ raw, ...item }) => item);
 
     this.logger.info("Search results ranked", {
       query,

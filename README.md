@@ -269,6 +269,55 @@ Returns frontend settings, feature flags, destination shelves, and available ind
 
 Persists frontend-managed settings.
 
+The settings payload accepts a new optional field to control indexer prioritization:
+
+```json
+{
+  "filters": {
+    "preferredFormat": "epub",
+    "indexers": ["Indexer A", "Indexer B"],
+    "indexerPriority": ["Indexer B", "Indexer A"]
+  }
+}
+```
+
+`filters.indexerPriority` is an ordered array of indexer names (strings). When present, Bookseerr will give a bonus to search results that originate from earlier indexers in the list.
+
+### Scoring & Indexer priority
+
+Bookseerr now uses a scoring-based ranking for search results to provide more consistent and relevant "best" selections. Factors included in the score:
+
+- Preferred format: large bonus when the result matches `filters.preferredFormat`.
+- Format bias: EPUB/azw3/mobi receive positive weight; PDF receives a negative penalty by default.
+- Seeders: added as points (capped) so healthier torrents rank higher.
+- File size: smaller files are preferred with a small bonus (to avoid unnecessarily large downloads).
+- Language match: bonus when the result language matches `filters.language`.
+- Indexer priority: optional ordered bonus via `filters.indexerPriority` (earlier indexers get a larger bonus).
+
+The `/api/search` response includes a numeric `score` on each result so you can inspect why a result was chosen. The search pipeline still applies filters (excluded formats, min seeds, max size, indexer selection) and falls back through relaxed stages if no result matches strictly.
+
+### How to test locally
+
+1. Open the UI and go to Settings → Prowlarr indexers. Use the new "Indexer priority" panel to add and order indexers.
+2. Save settings (this issues `POST /api/settings`).
+3. Run a search and inspect the returned results with `curl`:
+
+```bash
+curl "http://localhost:3000/api/search?query=your+book" | jq .
+```
+
+Look at the `score`, `format`, `seeders`, `sizeMB`, and `indexer` fields to verify ranking behaviour. Adjust `indexerPriority` or format preferences and save again to retune.
+
+Example `POST /api/settings` body including priority (useful for testing via `curl`):
+
+```bash
+curl -X POST http://localhost:3000/api/settings \
+  -H "Content-Type: application/json" \
+  -d '{"filters":{"preferredFormat":"epub","indexers":["MyIdx"],"indexerPriority":["MyIdx"]}}'
+```
+
+This feature is intended to make "best result" selection more deterministic and customizable for multi-indexer setups. If you want different weighting (e.g., reduce format bias or change size/seed influence), we can expose weight settings in the UI or tune defaults in `src/services/prowlarr.service.js`.
+
 ### `GET /api/jobs`
 
 Returns tracked jobs.
