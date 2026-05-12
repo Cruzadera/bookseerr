@@ -395,6 +395,53 @@ export default function App() {
     await downloadBook(best);
   }
 
+  // Local mirror of server-side filter enforcement to ensure auto-download
+  // only triggers when a result strictly matches the user's settings.
+  function matchesFiltersLocal(item, filters) {
+    if (!item || !item.downloadUrl) return false;
+
+    const excluded = Array.isArray(filters.excludedFormats) ? filters.excludedFormats : [];
+    if (excluded.includes((item.format || "").toLowerCase())) return false;
+
+    const minSeeds = Number(filters.minSeeds || 0);
+    if ((Number(item.seeders || 0)) < minSeeds) return false;
+
+    const maxSize = Number(filters.maxSizeMB || 0);
+    if (maxSize > 0 && Number(item.sizeMB || 0) > maxSize) return false;
+
+    if (filters.language && filters.language !== "any" && item.language && item.language !== "any") {
+      if (item.language !== filters.language) return false;
+    }
+
+    if (Array.isArray(filters.indexers) && filters.indexers.length) {
+      const normalized = `${item.indexer || ""}`.trim().toLowerCase();
+      const allowed = filters.indexers.map((i) => `${i || ""}`.trim().toLowerCase());
+      if (!allowed.includes(normalized)) return false;
+    }
+
+    return true;
+  }
+
+  async function maybeAutoDownload(nextResults) {
+    if (!settings.download.autoDownload || !nextResults.length) {
+      return;
+    }
+
+    const preferredFormat = settings.filters.preferredFormat || "any";
+    const mustMatchPreferred = Boolean(settings.download.onlyIfPreferredFormat) && preferredFormat !== "any";
+
+    // Find a result that strictly matches the user's settings
+    const candidate = nextResults.find((item) => {
+      if (!matchesFiltersLocal(item, settings.filters)) return false;
+      if (mustMatchPreferred && (item.format || "").toLowerCase() !== preferredFormat) return false;
+      return true;
+    });
+
+    if (!candidate) return;
+
+    await downloadBook(candidate);
+  }
+
   function saveRecentSearch(searchQuery) {
     const normalizedSearchQuery = normalizeRecentSearchEntry(searchQuery);
 

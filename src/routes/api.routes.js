@@ -206,17 +206,35 @@ function createApiRouter({
         return res.status(404).json({ error: "No results found" });
       }
 
-      const best = results[0];
-      const preferredFormat = `${settings.filters?.preferredFormat || "any"}`.toLowerCase();
+      // Enforce strict settings for automatic/requested downloads:
+      // preferred format (if required), excluded formats, min seeds, max size, language
+      // Normalize filters using the Prowlarr service so helper methods
+      // like `matchesFilters` receive the expected shapes (Sets, normalized values).
+      const normalizedFilters = prowlarrService.normalizeFilters(settings.filters);
+      const preferredFormat = `${normalizedFilters.preferredFormat || "any"}`.toLowerCase();
       const mustMatchPreferred =
         Boolean(settings.download?.onlyIfPreferredFormat) &&
         preferredFormat !== "any";
 
-      if (mustMatchPreferred && best.format !== preferredFormat) {
+      // Find the first result that strictly matches the normalized filters.
+      const acceptable = results.find((item) => {
+        try {
+          const passes = prowlarrService.matchesFilters(item, normalizedFilters);
+          if (!passes) return false;
+          if (mustMatchPreferred && (item.format || "").toLowerCase() !== preferredFormat) return false;
+          return true;
+        } catch (err) {
+          return false;
+        }
+      });
+
+      if (!acceptable) {
         return res.status(409).json({
-          error: `Best result does not match preferred format: ${preferredFormat}`,
+          error: "No available result meets current settings (preferred format / excluded formats / min seeds / language).",
         });
       }
+
+      const best = acceptable;
 
       const started = await startDownload({
         title: best.title,
