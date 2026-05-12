@@ -82,6 +82,7 @@ function createApp(services) {
       prowlarrService: services.prowlarrService,
       qbittorrentService: services.qbittorrentService,
       jobService: services.jobService,
+      favoriteService: services.favoriteService,
       destinationShelves: services.destinationShelves,
       settingsService: services.settingsService,
     }),

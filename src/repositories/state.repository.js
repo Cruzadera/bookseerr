@@ -4,6 +4,7 @@ const path = require("path");
 const DEFAULT_STATE = {
   jobs: [],
   processedFiles: {},
+  favorites: [],
 };
 
 class StateRepository {
@@ -85,6 +86,47 @@ class StateRepository {
 
   isProcessed(fileFingerprint) {
     return Boolean(this.state.processedFiles[fileFingerprint]);
+  }
+
+  listFavorites() {
+    return [...this.state.favorites].sort((a, b) => {
+      return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+    });
+  }
+
+  getFavoriteById(id) {
+    return this.state.favorites.find((item) => item.id === id) || null;
+  }
+
+  getFavoriteByDownloadUrl(downloadUrl) {
+    return (
+      this.state.favorites.find((item) => item.downloadUrl === downloadUrl) || null
+    );
+  }
+
+  async upsertFavorite(favorite) {
+    const index = this.state.favorites.findIndex((item) => item.id === favorite.id);
+
+    if (index >= 0) {
+      this.state.favorites[index] = favorite;
+    } else {
+      this.state.favorites.push(favorite);
+    }
+
+    await this.persist();
+    return favorite;
+  }
+
+  async removeFavorite(id) {
+    const previousLength = this.state.favorites.length;
+    this.state.favorites = this.state.favorites.filter((item) => item.id !== id);
+
+    if (this.state.favorites.length !== previousLength) {
+      await this.persist();
+      return true;
+    }
+
+    return false;
   }
 }
 

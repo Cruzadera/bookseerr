@@ -14,6 +14,7 @@ function createApiRouter({
   prowlarrService,
   qbittorrentService,
   jobService,
+  favoriteService,
   destinationShelves,
   settingsService,
 }) {
@@ -259,6 +260,67 @@ function createApiRouter({
   router.get("/jobs", (req, res) => {
     res.json({ jobs: jobService.listJobs() });
   });
+
+  router.get("/favorites", (req, res) => {
+    res.json({ favorites: favoriteService.listFavorites() });
+  });
+
+  router.post(
+    "/favorites",
+    asyncHandler(async (req, res) => {
+      const {
+        title,
+        author,
+        downloadUrl,
+        protocol,
+        format,
+        sizeMB,
+        seeders,
+        publishDate,
+        indexer,
+        language,
+        coverUrl,
+      } = req.body || {};
+
+      if (!downloadUrl) {
+        return res.status(400).json({ error: "Download URL is required" });
+      }
+
+      const result = await favoriteService.addFavorite({
+        title,
+        author,
+        downloadUrl,
+        protocol,
+        format,
+        sizeMB,
+        seeders,
+        publishDate,
+        indexer,
+        language,
+        coverUrl,
+      });
+
+      return res.status(result.created ? 201 : 200).json({
+        message: result.created
+          ? "Added to favorites"
+          : "Item is already in favorites",
+        favorite: result.favorite,
+      });
+    }),
+  );
+
+  router.delete(
+    "/favorites/:favoriteId",
+    asyncHandler(async (req, res) => {
+      const removed = await favoriteService.removeFavoriteById(req.params.favoriteId);
+
+      if (!removed) {
+        return res.status(404).json({ error: "Favorite not found" });
+      }
+
+      return res.status(204).send();
+    }),
+  );
 
   router.post(
     "/jobs/:jobId/retry",

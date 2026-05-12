@@ -69,6 +69,7 @@
     "nav": {
       "primary": "Primary",
       "home": "Home",
+      "favorites": "Favorites",
       "settings": "Settings",
       "recent": "Recent",
       "morePages": "More pages"
@@ -136,6 +137,17 @@
     "alerts": {
       "downloadStarted": "Download started!",
       "enterBeforeRequest": "Enter a book title before requesting a download."
+    },
+    "favorites": {
+      "pageSubtitle": "Keep a watchlist of books you might download later.",
+      "add": "Add to favorites",
+      "remove": "Remove",
+      "downloadNow": "Download now",
+      "added": "Added to favorites.",
+      "removed": "Removed from favorites.",
+      "emptyKicker": "Your watchlist is empty",
+      "emptyTitle": "No favorite books yet.",
+      "emptyDescription": "Mark books from search results to keep them for later."
     }
   ,
     "recent": {
