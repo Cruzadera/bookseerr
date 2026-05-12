@@ -4,6 +4,7 @@ import SearchView from "./components/SearchView";
 import SettingsView from "./components/SettingsView";
 import Sidebar from "./components/Sidebar";
 import JobsView from "./components/JobsView";
+import FavoritesView from "./components/FavoritesView";
 import { useI18n } from "./hooks/useI18n";
 import {
   cloneSettings,
@@ -147,6 +148,8 @@ export default function App() {
   const [downloadingKey, setDownloadingKey] = useState("");
   const [jobs, setJobs] = useState([]);
   const [jobActionId, setJobActionId] = useState("");
+  const [favorites, setFavorites] = useState([]);
+  const [favoriteActionKey, setFavoriteActionKey] = useState("");
   const [destinationShelfEnabled, setDestinationShelfEnabled] = useState(false);
   const [destinationShelves, setDestinationShelves] = useState([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
@@ -210,6 +213,27 @@ export default function App() {
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFavorites() {
+      try {
+        const response = await fetch("/api/favorites");
+        const data = await handleJsonResponse(response);
+
+        if (!cancelled) {
+          setFavorites(Array.isArray(data.favorites) ? data.favorites : []);
+        }
+      } catch {}
+    }
+
+    loadFavorites();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -327,6 +351,97 @@ export default function App() {
     const response = await fetch("/api/jobs");
     const data = await handleJsonResponse(response);
     setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+  }
+
+  async function refreshFavorites() {
+    const response = await fetch("/api/favorites");
+    const data = await handleJsonResponse(response);
+    setFavorites(Array.isArray(data.favorites) ? data.favorites : []);
+  }
+
+  function getResultKey(item) {
+    return `${item.title}::${item.downloadUrl}`;
+  }
+
+  function getFavoriteForResult(item) {
+    return favorites.find((favorite) => favorite.downloadUrl === item.downloadUrl) || null;
+  }
+
+  async function addFavorite(item) {
+    const resultKey = getResultKey(item);
+    setFavoriteActionKey(resultKey);
+
+    try {
+      const response = await fetch("/api/favorites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: item.title,
+          author: item.author,
+          downloadUrl: item.downloadUrl,
+          protocol: item.protocol || "torrent",
+          format: item.format,
+          sizeMB: item.sizeMB,
+          seeders: item.seeders,
+          publishDate: item.publishDate,
+          indexer: item.indexer,
+          language: item.language,
+          coverUrl: item.coverUrl,
+        }),
+      });
+
+      await handleJsonResponse(response);
+      await refreshFavorites();
+      setHomeStatus({ message: t("ui.favorites.added"), error: false });
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    } finally {
+      setFavoriteActionKey("");
+    }
+  }
+
+  async function removeFavoriteById(favoriteId, statusMessage = "") {
+    try {
+      const response = await fetch(`/api/favorites/${favoriteId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok && response.status !== 404) {
+        await handleJsonResponse(response);
+      }
+
+      await refreshFavorites();
+      if (statusMessage) {
+        setHomeStatus({ message: statusMessage, error: false });
+      }
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    }
+  }
+
+  async function toggleFavorite(item) {
+    const existing = getFavoriteForResult(item);
+
+    if (existing?.id) {
+      setFavoriteActionKey(getResultKey(item));
+      await removeFavoriteById(existing.id, t("ui.favorites.removed"));
+      setFavoriteActionKey("");
+      return;
+    }
+
+    await addFavorite(item);
+  }
+
+  async function removeFavoriteFromList(item) {
+    if (!item?.id) {
+      return;
+    }
+
+    setFavoriteActionKey(item.id);
+    await removeFavoriteById(item.id, t("ui.favorites.removed"));
+    setFavoriteActionKey("");
   }
 
   async function downloadBook(item) {
@@ -684,9 +799,23 @@ export default function App() {
               searchError={searchError}
               resultErrors={resultErrors}
               downloadingKey={downloadingKey}
+              favoriteActionKey={favoriteActionKey}
+              favoriteIdsByResultKey={favorites.reduce((acc, favorite) => {
+                acc[favorite.downloadUrl] = favorite.id;
+                return acc;
+              }, {})}
               isBusy={isBusy}
               onDownload={downloadBook}
+              onToggleFavorite={toggleFavorite}
               onRetryDownload={downloadBook}
+            />
+          ) : activePage === "favorites" ? (
+            <FavoritesView
+              t={t}
+              favorites={favorites}
+              isBusy={isBusy || Boolean(favoriteActionKey)}
+              onDownload={downloadBook}
+              onRemove={removeFavoriteFromList}
             />
           ) : activePage === "jobs" ? (
             <JobsView

@@ -7,6 +7,7 @@ const CalibreWebService = require("./services/calibre-web.service");
 const DownloadQueueService = require("./services/download-queue.service");
 const ImportService = require("./services/import.service");
 const JobService = require("./services/job.service");
+const FavoriteService = require("./services/favorite.service");
 const ProwlarrService = require("./services/prowlarr.service");
 const QBittorrentService = require("./services/qbittorrent.service");
 const { SettingsService } = require("./services/settings.service");
@@ -29,6 +30,7 @@ async function bootstrap() {
   await settingsService.init();
 
   const jobService = new JobService({ stateRepository });
+  const favoriteService = new FavoriteService({ stateRepository });
   const prowlarrService = new ProwlarrService({
     config: {
       ...config.prowlarr,
@@ -70,6 +72,7 @@ async function bootstrap() {
     prowlarrService,
     qbittorrentService,
     jobService,
+    favoriteService,
     destinationShelves: config.destinationShelves,
     settingsService,
     uiConfig: {

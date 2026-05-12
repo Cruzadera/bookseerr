@@ -69,6 +69,7 @@
     "nav": {
       "primary": "Principal",
       "home": "Inicio",
+      "favorites": "Favoritos",
       "settings": "Configuración",
       "recent": "Recientes",
       "morePages": "Más páginas"
@@ -136,6 +137,17 @@
     "alerts": {
       "downloadStarted": "¡Descarga iniciada!",
       "enterBeforeRequest": "Introduce un título de libro antes de solicitar una descarga."
+    },
+    "favorites": {
+      "pageSubtitle": "Guarda una lista de libros para descargar más tarde.",
+      "add": "Añadir a favoritos",
+      "remove": "Quitar",
+      "downloadNow": "Descargar ahora",
+      "added": "Añadido a favoritos.",
+      "removed": "Eliminado de favoritos.",
+      "emptyKicker": "Tu lista está vacía",
+      "emptyTitle": "Todavía no tienes libros favoritos.",
+      "emptyDescription": "Marca libros desde los resultados para guardarlos para después."
     }
   ,
     "recent": {

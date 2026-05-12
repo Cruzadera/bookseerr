@@ -83,7 +83,10 @@ function ResultCard({
   errorMessage,
   isBusy,
   isDownloading,
+  isFavorite,
+  favoriteBusy,
   onDownload,
+  onToggleFavorite,
   onRequestBest,
   onRetryDownload,
 }) {
@@ -151,6 +154,14 @@ function ResultCard({
           </div>
 
           <div className="result-actions">
+            <button
+              type="button"
+              className="secondary"
+              disabled={isBusy || favoriteBusy}
+              onClick={onToggleFavorite}
+            >
+              {isFavorite ? t("ui.favorites.remove") : t("ui.favorites.add")}
+            </button>
             {featured ? (
               <button type="button" className="secondary" disabled={isBusy} onClick={onRequestBest}>
                 {t("ui.requestButton")}
@@ -195,9 +206,12 @@ export default function ResultsList({
   searchError,
   resultErrors,
   downloadingKey,
+  favoriteActionKey,
+  favoriteIdsByResultKey,
   isBusy,
   onRetrySearch,
   onDownload,
+  onToggleFavorite,
   onRetryDownload,
   onRequestBest,
 }) {
@@ -255,7 +269,10 @@ export default function ResultsList({
             errorMessage={resultErrors[resultKey]}
             isBusy={isBusy}
             isDownloading={downloadingKey === resultKey}
+            isFavorite={Boolean(favoriteIdsByResultKey[item.downloadUrl])}
+            favoriteBusy={favoriteActionKey === resultKey}
             onDownload={() => onDownload(item)}
+            onToggleFavorite={() => onToggleFavorite(item)}
             onRetryDownload={() => onRetryDownload(item)}
             onRequestBest={onRequestBest}
           />
