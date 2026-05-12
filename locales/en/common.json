@@ -69,6 +69,7 @@
     "nav": {
       "primary": "Primary",
       "home": "Home",
+      "favorites": "Favorites",
       "settings": "Settings",
       "recent": "Recent",
       "morePages": "More pages"
@@ -104,6 +105,12 @@
       "language": "Language",
       "indexers": "Prowlarr indexers",
       "indexersHelp": "If none are selected, all available indexers will be used.",
+      "indexerPriorityTitle": "Indexer priority",
+      "indexerPriorityHelp": "Order selected indexers by priority (top = highest).",
+      "priorityList": "Priority",
+      "availableIndexers": "Available",
+      "add": "Add",
+      "noPrioritySet": "No indexer priority set.",
       "noIndexers": "No indexers available right now.",
       "autoDownload": "Auto-download best result after search",
       "onlyIfPreferredFormat": "Only download when it matches the preferred format",
@@ -130,6 +137,17 @@
     "alerts": {
       "downloadStarted": "Download started!",
       "enterBeforeRequest": "Enter a book title before requesting a download."
+    },
+    "favorites": {
+      "pageSubtitle": "Keep a watchlist of books you might download later.",
+      "add": "Add to favorites",
+      "remove": "Remove",
+      "downloadNow": "Download now",
+      "added": "Added to favorites.",
+      "removed": "Removed from favorites.",
+      "emptyKicker": "Your watchlist is empty",
+      "emptyTitle": "No favorite books yet.",
+      "emptyDescription": "Mark books from search results to keep them for later."
     }
   ,
     "recent": {

@@ -25,8 +25,11 @@ export default function SearchView({
   searchError,
   resultErrors,
   downloadingKey,
+  favoriteActionKey,
+  favoriteIdsByResultKey,
   isBusy,
   onDownload,
+  onToggleFavorite,
   onRetryDownload,
 }) {
   return (
@@ -157,9 +160,12 @@ export default function SearchView({
           searchError={searchError}
           resultErrors={resultErrors}
           downloadingKey={downloadingKey}
+          favoriteActionKey={favoriteActionKey}
+          favoriteIdsByResultKey={favoriteIdsByResultKey}
           isBusy={isBusy}
           onRetrySearch={onSearch}
           onDownload={onDownload}
+          onToggleFavorite={onToggleFavorite}
           onRetryDownload={onRetryDownload}
           onRequestBest={onRequestBest}
         />

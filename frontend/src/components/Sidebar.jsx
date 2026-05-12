@@ -39,6 +39,7 @@ export default function Sidebar({
 }) {
   const navigation = [
     { id: "home", label: t("ui.nav.home"), icon: <HomeIcon /> },
+    { id: "favorites", label: t("ui.nav.favorites"), icon: <BookmarkIcon /> },
     { id: "jobs", label: t("ui.nav.recent"), icon: <JobsIcon /> },
     { id: "settings", label: t("ui.nav.settings"), icon: <SettingsIcon /> },
   ];

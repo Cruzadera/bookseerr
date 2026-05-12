@@ -4,6 +4,7 @@ import SearchView from "./components/SearchView";
 import SettingsView from "./components/SettingsView";
 import Sidebar from "./components/Sidebar";
 import JobsView from "./components/JobsView";
+import FavoritesView from "./components/FavoritesView";
 import { useI18n } from "./hooks/useI18n";
 import {
   cloneSettings,
@@ -147,6 +148,8 @@ export default function App() {
   const [downloadingKey, setDownloadingKey] = useState("");
   const [jobs, setJobs] = useState([]);
   const [jobActionId, setJobActionId] = useState("");
+  const [favorites, setFavorites] = useState([]);
+  const [favoriteActionKey, setFavoriteActionKey] = useState("");
   const [destinationShelfEnabled, setDestinationShelfEnabled] = useState(false);
   const [destinationShelves, setDestinationShelves] = useState([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
@@ -210,6 +213,27 @@ export default function App() {
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFavorites() {
+      try {
+        const response = await fetch("/api/favorites");
+        const data = await handleJsonResponse(response);
+
+        if (!cancelled) {
+          setFavorites(Array.isArray(data.favorites) ? data.favorites : []);
+        }
+      } catch {}
+    }
+
+    loadFavorites();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -329,6 +353,97 @@ export default function App() {
     setJobs(Array.isArray(data.jobs) ? data.jobs : []);
   }
 
+  async function refreshFavorites() {
+    const response = await fetch("/api/favorites");
+    const data = await handleJsonResponse(response);
+    setFavorites(Array.isArray(data.favorites) ? data.favorites : []);
+  }
+
+  function getResultKey(item) {
+    return `${item.title}::${item.downloadUrl}`;
+  }
+
+  function getFavoriteForResult(item) {
+    return favorites.find((favorite) => favorite.downloadUrl === item.downloadUrl) || null;
+  }
+
+  async function addFavorite(item) {
+    const resultKey = getResultKey(item);
+    setFavoriteActionKey(resultKey);
+
+    try {
+      const response = await fetch("/api/favorites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: item.title,
+          author: item.author,
+          downloadUrl: item.downloadUrl,
+          protocol: item.protocol || "torrent",
+          format: item.format,
+          sizeMB: item.sizeMB,
+          seeders: item.seeders,
+          publishDate: item.publishDate,
+          indexer: item.indexer,
+          language: item.language,
+          coverUrl: item.coverUrl,
+        }),
+      });
+
+      await handleJsonResponse(response);
+      await refreshFavorites();
+      setHomeStatus({ message: t("ui.favorites.added"), error: false });
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    } finally {
+      setFavoriteActionKey("");
+    }
+  }
+
+  async function removeFavoriteById(favoriteId, statusMessage = "") {
+    try {
+      const response = await fetch(`/api/favorites/${favoriteId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok && response.status !== 404) {
+        await handleJsonResponse(response);
+      }
+
+      await refreshFavorites();
+      if (statusMessage) {
+        setHomeStatus({ message: statusMessage, error: false });
+      }
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    }
+  }
+
+  async function toggleFavorite(item) {
+    const existing = getFavoriteForResult(item);
+
+    if (existing?.id) {
+      setFavoriteActionKey(getResultKey(item));
+      await removeFavoriteById(existing.id, t("ui.favorites.removed"));
+      setFavoriteActionKey("");
+      return;
+    }
+
+    await addFavorite(item);
+  }
+
+  async function removeFavoriteFromList(item) {
+    if (!item?.id) {
+      return;
+    }
+
+    setFavoriteActionKey(item.id);
+    await removeFavoriteById(item.id, t("ui.favorites.removed"));
+    setFavoriteActionKey("");
+  }
+
   async function downloadBook(item) {
     const startedAt = Date.now();
     const resultKey = `${item.title}::${item.downloadUrl}`;
@@ -393,6 +508,53 @@ export default function App() {
     }
 
     await downloadBook(best);
+  }
+
+  // Local mirror of server-side filter enforcement to ensure auto-download
+  // only triggers when a result strictly matches the user's settings.
+  function matchesFiltersLocal(item, filters) {
+    if (!item || !item.downloadUrl) return false;
+
+    const excluded = Array.isArray(filters.excludedFormats) ? filters.excludedFormats : [];
+    if (excluded.includes((item.format || "").toLowerCase())) return false;
+
+    const minSeeds = Number(filters.minSeeds || 0);
+    if ((Number(item.seeders || 0)) < minSeeds) return false;
+
+    const maxSize = Number(filters.maxSizeMB || 0);
+    if (maxSize > 0 && Number(item.sizeMB || 0) > maxSize) return false;
+
+    if (filters.language && filters.language !== "any" && item.language && item.language !== "any") {
+      if (item.language !== filters.language) return false;
+    }
+
+    if (Array.isArray(filters.indexers) && filters.indexers.length) {
+      const normalized = `${item.indexer || ""}`.trim().toLowerCase();
+      const allowed = filters.indexers.map((i) => `${i || ""}`.trim().toLowerCase());
+      if (!allowed.includes(normalized)) return false;
+    }
+
+    return true;
+  }
+
+  async function maybeAutoDownload(nextResults) {
+    if (!settings.download.autoDownload || !nextResults.length) {
+      return;
+    }
+
+    const preferredFormat = settings.filters.preferredFormat || "any";
+    const mustMatchPreferred = Boolean(settings.download.onlyIfPreferredFormat) && preferredFormat !== "any";
+
+    // Find a result that strictly matches the user's settings
+    const candidate = nextResults.find((item) => {
+      if (!matchesFiltersLocal(item, settings.filters)) return false;
+      if (mustMatchPreferred && (item.format || "").toLowerCase() !== preferredFormat) return false;
+      return true;
+    });
+
+    if (!candidate) return;
+
+    await downloadBook(candidate);
   }
 
   function saveRecentSearch(searchQuery) {
@@ -637,9 +799,23 @@ export default function App() {
               searchError={searchError}
               resultErrors={resultErrors}
               downloadingKey={downloadingKey}
+              favoriteActionKey={favoriteActionKey}
+              favoriteIdsByResultKey={favorites.reduce((acc, favorite) => {
+                acc[favorite.downloadUrl] = favorite.id;
+                return acc;
+              }, {})}
               isBusy={isBusy}
               onDownload={downloadBook}
+              onToggleFavorite={toggleFavorite}
               onRetryDownload={downloadBook}
+            />
+          ) : activePage === "favorites" ? (
+            <FavoritesView
+              t={t}
+              favorites={favorites}
+              isBusy={isBusy || Boolean(favoriteActionKey)}
+              onDownload={downloadBook}
+              onRemove={removeFavoriteFromList}
             />
           ) : activePage === "jobs" ? (
             <JobsView
