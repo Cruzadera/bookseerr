@@ -322,8 +322,11 @@ function createApiRouter({
     asyncHandler(async (req, res) => {
       const favorites = favoriteService.listFavorites();
       const enriched = await withTimeout(
-        hardcoverService.enrichList(favorites),
-        1800,
+        hardcoverService.enrichList(favorites, {
+          useCacheOnly: true,
+          allowExpired: true,
+        }),
+        1200,
         favorites,
       );
       return res.json({ favorites: enriched });
@@ -356,6 +359,7 @@ function createApiRouter({
       const result = await favoriteService.addFavorite({
         title,
         author,
+        hardcoverId: req.body?.hardcoverId,
         downloadUrl,
         protocol,
         format,
@@ -367,6 +371,9 @@ function createApiRouter({
         indexer,
         language,
         coverUrl,
+        coverRemoteUrl: req.body?.coverRemoteUrl,
+        coverLocalPath: req.body?.coverLocalPath,
+        metadataUpdatedAt: req.body?.metadataUpdatedAt,
       });
 
       return res.status(result.created ? 201 : 200).json({
@@ -388,6 +395,79 @@ function createApiRouter({
       }
 
       return res.status(204).send();
+    }),
+  );
+
+  router.post(
+    "/favorites/:favoriteId/refresh-metadata",
+    asyncHandler(async (req, res) => {
+      const favorite = favoriteService.getFavoriteById(req.params.favoriteId);
+
+      if (!favorite) {
+        return res.status(404).json({ error: "Favorite not found" });
+      }
+
+      const enriched = await withTimeout(
+        hardcoverService.enrichBook(favorite, {
+          forceRefresh: true,
+        }),
+        3500,
+        favorite,
+      );
+
+      const updated = await favoriteService.updateFavoriteMetadata(favorite.id, {
+        title: enriched.title,
+        author: enriched.author,
+        hardcoverId: enriched.hardcoverId,
+        series: enriched.series,
+        publishYear: enriched.publishYear,
+        language: enriched.language,
+        coverUrl: enriched.coverUrl,
+        coverRemoteUrl: enriched.coverRemoteUrl,
+        coverLocalPath: enriched.coverLocalPath,
+        metadataUpdatedAt: enriched.metadataUpdatedAt || new Date().toISOString(),
+      });
+
+      return res.json({ favorite: updated || enriched });
+    }),
+  );
+
+  router.post(
+    "/favorites/refresh-metadata",
+    asyncHandler(async (req, res) => {
+      const favorites = favoriteService.listFavorites();
+
+      if (!favorites.length) {
+        return res.json({ refreshed: 0, favorites: [] });
+      }
+
+      const enriched = await withTimeout(
+        hardcoverService.enrichList(favorites, { forceRefresh: true }),
+        7000,
+        favorites,
+      );
+
+      const updated = [];
+
+      for (let index = 0; index < favorites.length; index += 1) {
+        const base = favorites[index];
+        const item = enriched[index] || base;
+        const next = await favoriteService.updateFavoriteMetadata(base.id, {
+          title: item.title,
+          author: item.author,
+          hardcoverId: item.hardcoverId,
+          series: item.series,
+          publishYear: item.publishYear,
+          language: item.language,
+          coverUrl: item.coverUrl,
+          coverRemoteUrl: item.coverRemoteUrl,
+          coverLocalPath: item.coverLocalPath,
+          metadataUpdatedAt: item.metadataUpdatedAt || new Date().toISOString(),
+        });
+        updated.push(next || item);
+      }
+
+      return res.json({ refreshed: updated.length, favorites: updated });
     }),
   );
 

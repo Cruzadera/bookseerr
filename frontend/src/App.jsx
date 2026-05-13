@@ -398,6 +398,7 @@ export default function App() {
         body: JSON.stringify({
           title: item.title,
           author: item.author,
+          hardcoverId: item.hardcoverId,
           downloadUrl: item.downloadUrl,
           protocol: item.protocol || "torrent",
           format: item.format,
@@ -409,6 +410,9 @@ export default function App() {
           indexer: item.indexer,
           language: item.language,
           coverUrl: item.coverUrl,
+          coverRemoteUrl: item.coverRemoteUrl,
+          coverLocalPath: item.coverLocalPath,
+          metadataUpdatedAt: item.metadataUpdatedAt,
         }),
       });
 
@@ -462,6 +466,50 @@ export default function App() {
     setFavoriteActionKey(item.id);
     await removeFavoriteById(item.id, t("ui.favorites.removed"));
     setFavoriteActionKey("");
+  }
+
+  async function refreshFavoriteMetadata(item) {
+    if (!item?.id || favoriteActionKey) {
+      return;
+    }
+
+    setFavoriteActionKey(item.id);
+
+    try {
+      const response = await fetch(`/api/favorites/${item.id}/refresh-metadata`, {
+        method: "POST",
+      });
+
+      await handleJsonResponse(response);
+      await refreshFavorites();
+      setHomeStatus({ message: t("ui.favorites.refreshDone"), error: false });
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    } finally {
+      setFavoriteActionKey("");
+    }
+  }
+
+  async function refreshAllFavoritesMetadata() {
+    if (favoriteActionKey) {
+      return;
+    }
+
+    setFavoriteActionKey("all");
+
+    try {
+      const response = await fetch("/api/favorites/refresh-metadata", {
+        method: "POST",
+      });
+
+      await handleJsonResponse(response);
+      await refreshFavorites();
+      setHomeStatus({ message: t("ui.favorites.refreshDone"), error: false });
+    } catch (error) {
+      setHomeStatus({ message: error.message, error: true });
+    } finally {
+      setFavoriteActionKey("");
+    }
   }
 
   async function downloadBook(item) {
@@ -953,6 +1001,8 @@ export default function App() {
               isBusy={isBusy || Boolean(favoriteActionKey)}
               onDownload={downloadBook}
               onRemove={removeFavoriteFromList}
+              onRefreshItem={refreshFavoriteMetadata}
+              onRefreshAll={refreshAllFavoritesMetadata}
             />
           ) : activePage === "jobs" ? (
             <JobsView

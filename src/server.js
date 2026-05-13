@@ -1,3 +1,5 @@
+const path = require("path");
+
 const createApp = require("./app");
 const config = require("./config");
 const Logger = require("./lib/logger");
@@ -49,6 +51,7 @@ async function bootstrap() {
   const hardcoverService = new HardcoverService({
     config: {
       requestTimeoutMs: config.app.requestTimeoutMs,
+      coversDir: path.join(path.dirname(stateRepository.stateFile), "covers"),
     },
     logger,
     settingsService,
@@ -88,6 +91,7 @@ async function bootstrap() {
     uiConfig: {
       destinationShelves: config.destinationShelves,
     },
+    dataRootDir: path.dirname(stateRepository.stateFile),
   });
 
   app.listen(config.app.port, () => {

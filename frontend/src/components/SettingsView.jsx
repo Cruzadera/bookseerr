@@ -216,6 +216,37 @@ export default function SettingsView({
                 </label>
 
                 <label className="field">
+                  <span>{t("ui.settings.hardcoverCacheTtlHours") || "Metadata cache TTL (hours)"}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={settings.hardcover.cacheTtlHours}
+                    onChange={(event) =>
+                      updateSection(
+                        "hardcover",
+                        "cacheTtlHours",
+                        Number(event.target.value || 1),
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="toggle-field">
+                  <input
+                    type="checkbox"
+                    checked={settings.hardcover.cacheCoverAssets}
+                    onChange={(event) =>
+                      updateSection("hardcover", "cacheCoverAssets", event.target.checked)
+                    }
+                  />
+                  <span>
+                    {t("ui.settings.hardcoverCacheCoverAssets") ||
+                      "Store cover assets locally in /data/covers"}
+                  </span>
+                </label>
+
+                <label className="field">
                   <span>{t("ui.settings.hardcoverProviderPriority") || "Metadata provider priority"}</span>
                   <select
                     value={(settings.hardcover.providerPriority || ["hardcover"])[0]}

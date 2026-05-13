@@ -1,7 +1,13 @@
 const axios = require("axios");
+const crypto = require("crypto");
+const fs = require("fs/promises");
+const path = require("path");
+
+const { ensureDir } = require("../utils/files");
 
 const DEFAULT_ENDPOINT = "https://api.hardcover.app/v1/graphql";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_CACHE_TTL_HOURS = 24 * 7;
 const UNKNOWN_AUTHOR_PATTERNS = [
   /^unknown\s+author$/i,
   /^autor\s+desconocido$/i,
@@ -57,6 +63,7 @@ function pickFirstString(...values) {
 function parseResult(raw) {
   const item = raw && typeof raw === "object" ? raw : {};
   const image = item.image && typeof item.image === "object" ? item.image : null;
+  const hardcoverId = Number(item.id || item.book_id || item.object_id || 0) || null;
 
   const authorNames = Array.isArray(item.author_names)
     ? item.author_names
@@ -76,6 +83,7 @@ function parseResult(raw) {
   const year = Number(item.release_year || item.publication_year || 0) || null;
 
   return {
+    hardcoverId,
     title: pickFirstString(item.title, item.name),
     author: pickFirstString(authorNames[0], item.author_name),
     authorNames: authorNames.filter(Boolean),
@@ -139,6 +147,7 @@ function parseBookDetail(book) {
   const year = releaseDate ? (new Date(releaseDate).getFullYear() || null) : null;
 
   return {
+    hardcoverId: Number(book.id || 0) || null,
     title: pickFirstString(book.title, book.name),
     author: authorNames[0] || "",
     authorNames,
@@ -158,12 +167,265 @@ class HardcoverService {
     this.stateRepository = stateRepository;
     this.requestTimeoutMs = Number(config.requestTimeoutMs || 15000);
     this.endpoint = config.endpoint || DEFAULT_ENDPOINT;
+    this.coversDir = config.coversDir || path.join("/data", "covers");
+    this.inFlightByLookupKey = new Map();
+    this.inFlightById = new Map();
     this.status = {
       code: "disabled",
       message: "Hardcover integration is disabled",
       checkedAt: null,
       retryAfter: null,
     };
+  }
+
+  getCacheTtlMs() {
+    const hardcover = this.getSettings();
+    const hours = Number(hardcover.cacheTtlHours || DEFAULT_CACHE_TTL_HOURS);
+
+    if (!Number.isFinite(hours) || hours <= 0) {
+      return CACHE_TTL_MS;
+    }
+
+    return Math.max(1, Math.floor(hours)) * 60 * 60 * 1000;
+  }
+
+  shouldCacheCoverAssets() {
+    const hardcover = this.getSettings();
+    return hardcover.cacheCoverAssets !== false;
+  }
+
+  buildLookupCacheKey(title, author) {
+    return `lookup:${buildCacheKey(title, author)}`;
+  }
+
+  buildIdCacheKey(hardcoverId) {
+    const value = Number(hardcoverId || 0) || 0;
+    return value > 0 ? `id:${value}` : "";
+  }
+
+  isExpired(cachedEntry) {
+    if (!cachedEntry?.expiresAt) {
+      return true;
+    }
+
+    return Date.now() > new Date(cachedEntry.expiresAt).getTime();
+  }
+
+  getCachedEntryByKey(cacheKey) {
+    if (!cacheKey || !this.stateRepository?.getHardcoverCacheEntry) {
+      return null;
+    }
+
+    return this.stateRepository.getHardcoverCacheEntry(cacheKey);
+  }
+
+  getCachedEntry(title, author, hardcoverId = null) {
+    const exactKey = this.buildLookupCacheKey(title, author);
+    const titleOnlyKey = this.buildLookupCacheKey(title, "");
+    const idKey = this.buildIdCacheKey(hardcoverId);
+
+    return (
+      this.getCachedEntryByKey(exactKey) ||
+      this.getCachedEntryByKey(titleOnlyKey) ||
+      this.getCachedEntryByKey(idKey)
+    );
+  }
+
+  getCachedMetadata(title, author, options = {}) {
+    const entry = this.getCachedEntry(title, author, options.hardcoverId);
+
+    if (!entry?.value) {
+      return null;
+    }
+
+    if (this.isExpired(entry) && !options.allowExpired) {
+      return null;
+    }
+
+    return {
+      ...entry.value,
+      createdAt: entry.createdAt || entry.cachedAt || null,
+      updatedAt: entry.updatedAt || entry.cachedAt || null,
+      cacheExpired: this.isExpired(entry),
+    };
+  }
+
+  async setCachedMetadata(title, author, value, options = {}) {
+    if (!this.stateRepository?.setHardcoverCacheEntry) {
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+    const ttlMs = this.getCacheTtlMs();
+    const exactKey = this.buildLookupCacheKey(title, author);
+    const titleOnlyKey = this.buildLookupCacheKey(title, "");
+    const idKey = this.buildIdCacheKey(options.hardcoverId || value?.hardcoverId);
+    const keys = [exactKey, titleOnlyKey, idKey].filter(Boolean);
+
+    for (const cacheKey of keys) {
+      const current = this.getCachedEntryByKey(cacheKey);
+      await this.stateRepository.setHardcoverCacheEntry(cacheKey, {
+        value,
+        createdAt: current?.createdAt || nowIso,
+        updatedAt: nowIso,
+        expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+      });
+    }
+  }
+
+  async dedupeByMap(map, key, task) {
+    if (!key) {
+      return task();
+    }
+
+    if (map.has(key)) {
+      return map.get(key);
+    }
+
+    const promise = Promise.resolve()
+      .then(task)
+      .finally(() => {
+        map.delete(key);
+      });
+
+    map.set(key, promise);
+    return promise;
+  }
+
+  toCachePayload(metadata, fallback = {}) {
+    if (!metadata) {
+      return null;
+    }
+
+    return {
+      hardcoverId: Number(metadata.hardcoverId || fallback.hardcoverId || 0) || null,
+      title: pickFirstString(metadata.title, fallback.title),
+      author: pickFirstString(metadata.author, fallback.author),
+      coverUrl: pickFirstString(metadata.coverUrl, fallback.coverUrl),
+      coverLocalPath: pickFirstString(metadata.coverLocalPath, fallback.coverLocalPath),
+      coverResolvedUrl: pickFirstString(
+        metadata.coverLocalPath,
+        metadata.coverUrl,
+        fallback.coverLocalPath,
+        fallback.coverUrl,
+      ),
+      publishYear: Number(metadata.publishYear || fallback.publishYear || 0) || null,
+      language: pickFirstString(metadata.language, fallback.language) || null,
+      series: pickFirstString(metadata.series, fallback.series) || null,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  applyCachedMetadata(item = {}, metadata = {}) {
+    const hardcover = this.getSettings();
+    const autoFetchCovers = hardcover.autoFetchCovers !== false;
+    const shouldReplaceAuthor = shouldRecoverAuthor(item.author);
+    const preferredProvider = Array.isArray(hardcover.providerPriority)
+      ? hardcover.providerPriority
+      : ["hardcover", "indexer"];
+    const hardcoverPreferred = preferredProvider[0] === "hardcover";
+
+    const resolvedCover = pickFirstString(
+      metadata.coverLocalPath,
+      metadata.coverResolvedUrl,
+      metadata.coverUrl,
+    );
+
+    const nextCover = autoFetchCovers
+      ? hardcoverPreferred
+        ? pickFirstString(resolvedCover, item.coverUrl)
+        : pickFirstString(item.coverUrl, resolvedCover)
+      : item.coverUrl;
+
+    const nextPublishDate =
+      item.publishDate || (metadata.publishYear ? `${metadata.publishYear}-01-01` : null);
+
+    return {
+      ...item,
+      hardcoverId: Number(metadata.hardcoverId || item.hardcoverId || 0) || null,
+      author: shouldReplaceAuthor
+        ? pickFirstString(metadata.author, item.author)
+        : pickFirstString(item.author, metadata.author),
+      coverUrl: nextCover || null,
+      coverLocalPath: pickFirstString(metadata.coverLocalPath, item.coverLocalPath) || null,
+      coverRemoteUrl: pickFirstString(metadata.coverUrl, item.coverRemoteUrl) || null,
+      series: pickFirstString(item.series, metadata.series) || null,
+      publishDate: nextPublishDate,
+      language: pickFirstString(item.language, metadata.language) || null,
+      publishYear: Number(metadata.publishYear || item.publishYear || 0) || null,
+      metadataUpdatedAt: metadata.lastUpdated || item.metadataUpdatedAt || null,
+      metadataSource: "hardcover-cache",
+    };
+  }
+
+  buildCoverFilename(coverUrl, hardcoverId) {
+    const digest = crypto
+      .createHash("sha1")
+      .update(`${hardcoverId || "x"}:${coverUrl}`)
+      .digest("hex");
+    const parsed = new URL(coverUrl);
+    const extension = path.extname(parsed.pathname || "").toLowerCase();
+    const safeExtension = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"].includes(extension)
+      ? extension
+      : ".jpg";
+
+    return `${digest}${safeExtension}`;
+  }
+
+  async cacheCoverAsset(coverUrl, hardcoverId) {
+    const normalizedCoverUrl = normalizeString(coverUrl);
+
+    if (!normalizedCoverUrl || !this.shouldCacheCoverAssets()) {
+      return "";
+    }
+
+    if (normalizedCoverUrl.startsWith("/covers/")) {
+      return normalizedCoverUrl;
+    }
+
+    if (!/^https?:\/\//i.test(normalizedCoverUrl)) {
+      return "";
+    }
+
+    const dedupeKey = `${hardcoverId || "x"}:${normalizedCoverUrl}`;
+
+    return this.dedupeByMap(this.inFlightById, dedupeKey, async () => {
+      try {
+        const filename = this.buildCoverFilename(normalizedCoverUrl, hardcoverId);
+        const filePath = path.join(this.coversDir, filename);
+        const publicPath = `/covers/${filename}`;
+
+        await ensureDir(this.coversDir);
+
+        try {
+          await fs.access(filePath);
+          return publicPath;
+        } catch {}
+
+        const response = await axios.get(normalizedCoverUrl, {
+          timeout: this.requestTimeoutMs,
+          responseType: "arraybuffer",
+          headers: {
+            "user-agent": "bookseerr/1 metadata-enrichment",
+          },
+        });
+
+        const contentType = `${response.headers?.["content-type"] || ""}`.toLowerCase();
+
+        if (contentType && !contentType.startsWith("image/")) {
+          return "";
+        }
+
+        await fs.writeFile(filePath, Buffer.from(response.data));
+        return publicPath;
+      } catch (error) {
+        this.logger?.warn?.("Failed to cache hardcover cover", {
+          coverUrl: normalizedCoverUrl,
+          error: error.message,
+        });
+        return "";
+      }
+    });
   }
 
   getSettings() {
@@ -306,36 +568,6 @@ class HardcoverService {
     }
   }
 
-  getCachedMetadata(title, author) {
-    if (!this.stateRepository?.getHardcoverCacheEntry) {
-      return null;
-    }
-
-    const cached = this.stateRepository.getHardcoverCacheEntry(buildCacheKey(title, author));
-
-    if (!cached || !cached.expiresAt) {
-      return null;
-    }
-
-    if (Date.now() > new Date(cached.expiresAt).getTime()) {
-      return null;
-    }
-
-    return cached.value || null;
-  }
-
-  async setCachedMetadata(title, author, value) {
-    if (!this.stateRepository?.setHardcoverCacheEntry) {
-      return;
-    }
-
-    await this.stateRepository.setHardcoverCacheEntry(buildCacheKey(title, author), {
-      value,
-      expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
-      cachedAt: new Date().toISOString(),
-    });
-  }
-
   scoreCandidate(candidate, title, author) {
     const normalizedCandidateTitle = normalizeTitle(candidate.title);
     const normalizedTitle = normalizeTitle(title);
@@ -367,177 +599,223 @@ class HardcoverService {
     return score;
   }
 
-  async searchMetadata({ title, author }) {
-    const hardcover = this.getSettings();
-    const token = normalizeString(hardcover.token);
+  async searchMetadata({ title, author, hardcoverId = null, allowExpired = false, forceRefresh = false }) {
+    const normalizedTitle = normalizeString(title);
 
-    if (!token || !normalizeString(title)) {
+    if (!normalizedTitle) {
       return null;
     }
 
-    const cached = this.getCachedMetadata(title, author);
+    if (!forceRefresh) {
+      const cached = this.getCachedMetadata(title, author, {
+        hardcoverId,
+        allowExpired,
+      });
 
-    if (cached) {
-      return cached;
-    }
-
-    const queryText = normalizeString(author)
-      ? `${normalizeString(title)} ${normalizeString(author)}`
-      : normalizeString(title);
-
-    // Step 1: Search Hardcover for the book.
-    // `results` is a Typesense JSON blob (not a GraphQL array).
-    // `ids` is a plain integer array — much easier to work with.
-    const searchData = await this.requestGraphQL({
-      token,
-      query: `
-        query SearchBookMetadata($query: String!, $perPage: Int!, $page: Int!) {
-          search(query: $query, query_type: "Book", per_page: $perPage, page: $page) {
-            ids
-            results
-          }
-        }
-      `,
-      variables: {
-        query: queryText,
-        perPage: 5,
-        page: 1,
-      },
-    });
-
-    const ids = Array.isArray(searchData?.search?.ids)
-      ? searchData.search.ids.filter(Boolean).map(Number).filter(Boolean).slice(0, 5)
-      : [];
-
-    // Parse the Typesense blob for basic metadata (title, author_names, release_year, etc.)
-    const searchHits = parseTypesenseResults(searchData?.search?.results);
-
-    if (!ids.length && !searchHits.length) {
-      await this.setCachedMetadata(title, author, null);
-      return null;
-    }
-
-    // Step 2: Fetch full book details (cover image) by ID.
-    // Cover images are NOT included in the Typesense search blob — we need a
-    // separate `books` query.  We stay within the API depth limit (≤3) by
-    // not nesting contributions here; author data comes from the search blob.
-    const detailMap = {};
-
-    if (ids.length) {
-      try {
-        const booksData = await this.requestGraphQL({
-          token,
-          query: `
-            query GetHardcoverBooksByIds($ids: [Int!]!) {
-              books(where: { id: { _in: $ids } }, limit: 5) {
-                id
-                title
-                release_date
-                image { url }
-                featured_series { name }
-              }
-            }
-          `,
-          variables: { ids },
-        });
-
-        for (const book of booksData?.books || []) {
-          if (book?.id != null) {
-            detailMap[String(book.id)] = book;
-          }
-        }
-      } catch (err) {
-        this.logger?.warn?.("Hardcover book detail lookup failed", { error: err.message });
+      if (cached) {
+        return cached;
       }
     }
 
-    // Merge: prefer detail data for covers/series; prefer search blob for authors
-    const candidates = searchHits.length > 0
-      ? searchHits.map((hit, index) => {
-          const id = String(ids[index] ?? "");
-          const detail = detailMap[id];
-          return {
-            ...hit,
-            coverUrl: pickFirstString(detail?.image?.url, hit.coverUrl),
-            series: pickFirstString(hit.series, detail?.featured_series?.name) || null,
-          };
-        })
-      : ids
-          .map((id) => {
-            const book = detailMap[String(id)];
-            return book ? parseBookDetail(book) : null;
-          })
-          .filter(Boolean);
+    const hardcover = this.getSettings();
+    const token = normalizeString(hardcover.token);
 
-    if (!candidates.length) {
-      await this.setCachedMetadata(title, author, null);
+    if (!token) {
       return null;
     }
 
-    const best =
-      [...candidates]
-        .map((item) => ({ item, score: this.scoreCandidate(item, title, author) }))
-        .sort((a, b) => b.score - a.score)
-        .map((entry) => entry.item)[0] || null;
+    const lookupKey = this.buildLookupCacheKey(title, author);
 
-    await this.setCachedMetadata(title, author, best);
-    return best;
+    return this.dedupeByMap(this.inFlightByLookupKey, lookupKey, async () => {
+      if (!forceRefresh) {
+        const cached = this.getCachedMetadata(title, author, {
+          hardcoverId,
+          allowExpired,
+        });
+
+        if (cached) {
+          return cached;
+        }
+      }
+
+      const queryText = normalizeString(author)
+        ? `${normalizeString(title)} ${normalizeString(author)}`
+        : normalizeString(title);
+
+      const searchData = await this.requestGraphQL({
+        token,
+        query: `
+          query SearchBookMetadata($query: String!, $perPage: Int!, $page: Int!) {
+            search(query: $query, query_type: "Book", per_page: $perPage, page: $page) {
+              ids
+              results
+            }
+          }
+        `,
+        variables: {
+          query: queryText,
+          perPage: 5,
+          page: 1,
+        },
+      });
+
+      const ids = Array.isArray(searchData?.search?.ids)
+        ? searchData.search.ids.filter(Boolean).map(Number).filter(Boolean).slice(0, 5)
+        : [];
+      const searchHits = parseTypesenseResults(searchData?.search?.results);
+
+      if (!ids.length && !searchHits.length) {
+        await this.setCachedMetadata(title, author, null, { hardcoverId });
+        return null;
+      }
+
+      const detailMap = {};
+
+      if (ids.length) {
+        try {
+          const booksData = await this.requestGraphQL({
+            token,
+            query: `
+              query GetHardcoverBooksByIds($ids: [Int!]!) {
+                books(where: { id: { _in: $ids } }, limit: 5) {
+                  id
+                  title
+                  release_date
+                  image { url }
+                }
+              }
+            `,
+            variables: { ids },
+          });
+
+          for (const book of booksData?.books || []) {
+            if (book?.id != null) {
+              detailMap[String(book.id)] = book;
+            }
+          }
+        } catch (error) {
+          this.logger?.warn?.("Hardcover book detail lookup failed", {
+            error: error.message,
+          });
+        }
+      }
+
+      const candidates = searchHits.length
+        ? searchHits.map((hit, index) => {
+            const id = Number(ids[index] || hit.hardcoverId || 0) || null;
+            const detail = detailMap[String(id || "")];
+
+            return {
+              ...hit,
+              hardcoverId: id,
+              coverUrl: pickFirstString(detail?.image?.url, hit.coverUrl),
+              series: pickFirstString(hit.series, detail?.featured_series?.name) || null,
+            };
+          })
+        : ids
+            .map((id) => {
+              const book = detailMap[String(id)];
+              const parsed = book ? parseBookDetail(book) : null;
+              return parsed ? { ...parsed, hardcoverId: id } : null;
+            })
+            .filter(Boolean);
+
+      if (!candidates.length) {
+        await this.setCachedMetadata(title, author, null, { hardcoverId });
+        return null;
+      }
+
+      const best =
+        [...candidates]
+          .map((entry) => ({
+            item: entry,
+            score: this.scoreCandidate(entry, title, author),
+          }))
+          .sort((a, b) => b.score - a.score)
+          .map((entry) => entry.item)[0] || null;
+
+      if (!best) {
+        await this.setCachedMetadata(title, author, null, { hardcoverId });
+        return null;
+      }
+
+      const localCoverPath = await this.cacheCoverAsset(best.coverUrl, best.hardcoverId);
+      const payload = this.toCachePayload(
+        {
+          ...best,
+          coverLocalPath: localCoverPath || null,
+        },
+        {
+          title,
+          author,
+        },
+      );
+
+      await this.setCachedMetadata(title, author, payload, {
+        hardcoverId: best.hardcoverId || hardcoverId,
+      });
+
+      return payload;
+    });
   }
 
-  async enrichBook(item = {}) {
-    if (!this.isAvailable()) {
-      return { ...item, metadataSource: "indexer" };
-    }
+  async enrichBook(item = {}, options = {}) {
+    const allowExpired = Boolean(options.allowExpired);
+    const forceRefresh = Boolean(options.forceRefresh);
+    const useCacheOnly = Boolean(options.useCacheOnly);
 
     try {
+      if (!forceRefresh) {
+        const cached = this.getCachedMetadata(item.title, item.author, {
+          hardcoverId: item.hardcoverId,
+          allowExpired: allowExpired || useCacheOnly || !this.isAvailable(),
+        });
+
+        if (cached) {
+          return this.applyCachedMetadata(item, cached);
+        }
+      }
+
+      if (useCacheOnly || !this.isAvailable()) {
+        return { ...item, metadataSource: "indexer" };
+      }
+
       const metadata = await this.searchMetadata({
         title: item.title,
         author: item.author,
+        hardcoverId: item.hardcoverId,
+        allowExpired,
+        forceRefresh,
       });
 
       if (!metadata) {
         return { ...item, metadataSource: "indexer" };
       }
 
-      const hardcover = this.getSettings();
-      const autoFetchCovers = hardcover.autoFetchCovers !== false;
-      const shouldReplaceAuthor = shouldRecoverAuthor(item.author);
-      const preferredProvider = Array.isArray(hardcover.providerPriority)
-        ? hardcover.providerPriority
-        : ["hardcover", "indexer"];
-      const hardcoverPreferred = preferredProvider[0] === "hardcover";
-
-      const nextCover = autoFetchCovers
-        ? hardcoverPreferred
-          ? pickFirstString(metadata.coverUrl, item.coverUrl)
-          : pickFirstString(item.coverUrl, metadata.coverUrl)
-        : item.coverUrl;
-
-      const nextPublishDate =
-        item.publishDate || (metadata.publishYear ? `${metadata.publishYear}-01-01` : null);
-
       return {
-        ...item,
-        author: shouldReplaceAuthor
-          ? pickFirstString(metadata.author, item.author)
-          : pickFirstString(item.author, metadata.author),
-        coverUrl: nextCover || null,
-        series: pickFirstString(item.series, metadata.series) || null,
-        publishDate: nextPublishDate,
-        language: pickFirstString(item.language, metadata.language) || null,
-        publishYear: Number(metadata.publishYear || 0) || null,
-        metadataSource: "hardcover",
+        ...this.applyCachedMetadata(item, metadata),
+        metadataSource: forceRefresh ? "hardcover-refresh" : "hardcover",
       };
     } catch (error) {
       this.logger?.warn?.("Hardcover enrichment failed", {
         title: item.title,
         error: error.message,
       });
+
+      const fallbackCached = this.getCachedMetadata(item.title, item.author, {
+        hardcoverId: item.hardcoverId,
+        allowExpired: true,
+      });
+
+      if (fallbackCached) {
+        return this.applyCachedMetadata(item, fallbackCached);
+      }
+
       return { ...item, metadataSource: "indexer" };
     }
   }
 
-  async enrichList(items = []) {
+  async enrichList(items = [], options = {}) {
     if (!Array.isArray(items) || !items.length) {
       return [];
     }
@@ -545,8 +823,7 @@ class HardcoverService {
     const enriched = [];
 
     for (const item of items) {
-      // Keep requests sequential to stay below Hardcover API rate limits.
-      enriched.push(await this.enrichBook(item));
+      enriched.push(await this.enrichBook(item, options));
     }
 
     return enriched;
