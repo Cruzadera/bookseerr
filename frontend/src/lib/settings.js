@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
     hasToken: false,
     providerPriority: ["hardcover", "indexer"],
     autoFetchCovers: true,
+    cacheTtlHours: 168,
+    cacheCoverAssets: true,
     onboardingDismissed: false,
   },
 });
@@ -79,6 +81,16 @@ function normalizeNumber(value, fallback) {
   const numeric = Number(value);
 
   if (!Number.isFinite(numeric) || numeric < 0) {
+    return fallback;
+  }
+
+  return numeric;
+}
+
+function normalizePositiveInt(value, fallback) {
+  const numeric = Math.floor(Number(value));
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
     return fallback;
   }
 
@@ -181,6 +193,14 @@ export function normalizeSettings(candidate = {}) {
         merged.hardcover?.autoFetchCovers === undefined
           ? DEFAULT_SETTINGS.hardcover.autoFetchCovers
           : Boolean(merged.hardcover.autoFetchCovers),
+      cacheTtlHours: normalizePositiveInt(
+        merged.hardcover?.cacheTtlHours,
+        DEFAULT_SETTINGS.hardcover.cacheTtlHours,
+      ),
+      cacheCoverAssets:
+        merged.hardcover?.cacheCoverAssets === undefined
+          ? DEFAULT_SETTINGS.hardcover.cacheCoverAssets
+          : Boolean(merged.hardcover.cacheCoverAssets),
       onboardingDismissed:
         merged.hardcover?.onboardingDismissed === undefined
           ? DEFAULT_SETTINGS.hardcover.onboardingDismissed

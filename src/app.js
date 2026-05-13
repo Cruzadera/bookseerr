@@ -117,6 +117,9 @@ function createApp(services) {
   });
 
   app.use("/locales", express.static(path.join(__dirname, "../locales")));
+  if (services.dataRootDir) {
+    app.use("/covers", express.static(path.join(services.dataRootDir, "covers")));
+  }
   app.use("/", express.static(frontendPath));
   app.use("/", express.static(legacyWebPath));
 

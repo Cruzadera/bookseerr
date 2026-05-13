@@ -37,6 +37,8 @@ export default function FavoritesView({
   isBusy,
   onDownload,
   onRemove,
+  onRefreshItem,
+  onRefreshAll,
 }) {
   return (
     <section className="page-view">
@@ -46,6 +48,14 @@ export default function FavoritesView({
       </section>
 
       <section className="panel">
+        {favorites.length ? (
+          <div className="actions" style={{ marginBottom: "0.75rem" }}>
+            <button type="button" className="secondary" disabled={isBusy} onClick={onRefreshAll}>
+              {t("ui.favorites.refreshMetadata")}
+            </button>
+          </div>
+        ) : null}
+
         {!favorites.length ? (
           <EmptyFavorites t={t} />
         ) : (
@@ -67,6 +77,14 @@ export default function FavoritesView({
                       <div className="result-actions">
                         <button type="button" disabled={isBusy} onClick={() => onDownload(item)}>
                           {t("ui.favorites.downloadNow")}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={isBusy}
+                          onClick={() => onRefreshItem(item)}
+                        >
+                          {t("ui.favorites.refreshMetadata")}
                         </button>
                         <button
                           type="button"
