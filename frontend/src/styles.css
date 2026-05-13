@@ -809,6 +809,7 @@ button.secondary:hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
 }
 
@@ -896,6 +897,22 @@ button.secondary:hover {
   gap: 0.65rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.favorites-results .favorites-result-card {
+  align-items: stretch;
+}
+
+.favorites-results .result-main {
+  gap: 0.7rem;
+}
+
+.favorites-results .result-head {
+  align-items: flex-start;
+}
+
+.favorites-results .result-actions {
+  min-width: 12.5rem;
 }
 
 .actions button,

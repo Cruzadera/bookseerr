@@ -30,6 +30,14 @@ function BookmarkIcon() {
   );
 }
 
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="m12 2.5 2.93 5.93 6.55.95-4.74 4.62 1.12 6.52L12 17.44 6.14 20.52l1.12-6.52-4.74-4.62 6.55-.95L12 2.5z" />
+    </svg>
+  );
+}
+
 export default function Sidebar({
   t,
   activePage,
@@ -39,7 +47,7 @@ export default function Sidebar({
 }) {
   const navigation = [
     { id: "home", label: t("ui.nav.home"), icon: <HomeIcon /> },
-    { id: "favorites", label: t("ui.nav.favorites"), icon: <BookmarkIcon /> },
+    { id: "favorites", label: t("ui.nav.favorites"), icon: <StarIcon /> },
     { id: "jobs", label: t("ui.nav.recent"), icon: <JobsIcon /> },
     { id: "settings", label: t("ui.nav.settings"), icon: <SettingsIcon /> },
   ];

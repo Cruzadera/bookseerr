@@ -1,4 +1,4 @@
-import { useState } from "react";
+import BookCover from "./BookCover";
 
 function formatSize(sizeMB) {
   const numeric = Number(sizeMB || 0);
@@ -96,7 +96,6 @@ function ResultCard({
   const source = item.indexer || t("ui.indexer");
   const featured = index === 0;
   const formatValue = `${item.format || "unknown"}`.toUpperCase();
-  const [imageBroken, setImageBroken] = useState(false);
 
   return (
     <article
@@ -109,22 +108,7 @@ function ResultCard({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="result-cover">
-        {coverUrl && !imageBroken ? (
-          <img
-            src={coverUrl}
-            alt={title}
-            loading="lazy"
-            onError={() => setImageBroken(true)}
-          />
-        ) : null}
-        {!coverUrl || imageBroken ? (
-          <span className="result-cover-fallback" aria-hidden="true">
-            {(title.charAt(0) || "?").toUpperCase()}
-          </span>
-        ) : null}
-        <span className="result-cover-format">{formatValue}</span>
-      </div>
+      <BookCover coverUrl={coverUrl} title={title} format={item.format} />
 
       <div className="result-main">
         {isDownloading ? (
