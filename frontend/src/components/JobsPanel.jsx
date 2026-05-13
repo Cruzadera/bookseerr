@@ -51,6 +51,24 @@ function getJobDescription(job, t) {
   return t("ui.jobs.pending");
 }
 
+function getMetadataLine(job) {
+  const parts = [];
+
+  if (job.author) {
+    parts.push(job.author);
+  }
+
+  if (job.series) {
+    parts.push(job.series);
+  }
+
+  if (job.publishYear) {
+    parts.push(`${job.publishYear}`);
+  }
+
+  return parts.join(" · ");
+}
+
 function getActionLabel(job, t) {
   return job.state === "error"
     ? t("ui.jobs.actions.retry")
@@ -104,6 +122,9 @@ export default function JobsPanel({
                   </span>
                 </div>
                 <p className="job-card-copy">{getJobDescription(job, t)}</p>
+                {getMetadataLine(job) ? (
+                  <p className="job-card-copy">{getMetadataLine(job)}</p>
+                ) : null}
                 <div className="job-card-meta">
                   {job.destinationLabel ? <span>{job.destinationLabel}</span> : null}
                   {job.updatedAt ? <span>{formatTimestamp(job.updatedAt, language)}</span> : null}

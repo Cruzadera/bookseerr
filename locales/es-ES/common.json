@@ -124,6 +124,32 @@
       "anyLanguage": "Cualquier idioma",
       "spanish": "Español",
       "english": "Inglés"
+      ,
+      "hardcoverTitle": "Metadatos de Hardcover",
+      "hardcoverStatus": "Estado",
+      "hardcoverDisabled": "La integración con Hardcover está desactivada.",
+      "hardcoverEnabled": "Activar integración con Hardcover",
+      "hardcoverToken": "Token API de Hardcover",
+      "hardcoverAutoFetchCovers": "Obtener automáticamente portadas desde Hardcover",
+      "hardcoverProviderPriority": "Prioridad de proveedor de metadatos",
+      "hardcoverFirst": "Hardcover primero",
+      "indexerFirst": "Indexer primero",
+      "hardcoverValidate": "Validar token",
+      "hardcoverClearToken": "Eliminar token",
+      "hardcoverConnected": "Conectado con Hardcover.",
+      "hardcoverInvalidToken": "El token de Hardcover no es válido.",
+      "hardcoverTokenRequired": "Introduce tu token API de Hardcover.",
+      "hardcoverConnecting": "Conectando..."
+    },
+    "hardcoverOnboarding": {
+      "kicker": "Configuración opcional",
+      "title": "Conecta Hardcover para mejorar metadatos",
+      "subtitle": "Mejora portadas, autores y datos de publicación con tu cuenta de Hardcover.",
+      "description": "Puedes omitir este paso y activarlo más tarde desde Configuración.",
+      "enable": "Activar Hardcover",
+      "skip": "Omitir por ahora",
+      "configuration": "Para obtener tu clave API, accede a este enlace:",
+      "configurationLinkText": "Obtener clave API de Hardcover"
     },
     "status": {
       "searching": "Buscando...",

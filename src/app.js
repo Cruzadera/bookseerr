@@ -6,10 +6,26 @@ const errorHandler = require("./middleware/error-handler");
 const createApiRouter = require("./routes/api.routes");
 
 async function buildSettingsPayload(services) {
+  const rawSettings = services.settingsService?.getSettings?.() || {};
+  const safeSettings = {
+    ...rawSettings,
+    hardcover: {
+      ...(rawSettings.hardcover || {}),
+      token: "",
+      hasToken: Boolean(rawSettings.hardcover?.token),
+    },
+  };
+
   return {
-    settings: services.settingsService?.getSettings?.() || {},
+    settings: safeSettings,
     features: {
       destinationShelf: services.uiConfig.destinationShelves.enabled,
+    },
+    hardcover: {
+      status: services.hardcoverService?.getPublicStatus?.() || {
+        code: "disabled",
+        message: "Hardcover integration is disabled",
+      },
     },
     destinationShelves: services.uiConfig.destinationShelves.options.map(
       (item) => ({
@@ -19,6 +35,35 @@ async function buildSettingsPayload(services) {
     ),
     availableIndexers: await services.prowlarrService?.listIndexers?.(),
   };
+}
+
+function mergeSensitiveSettings(currentSettings = {}, incoming = {}) {
+  const next = { ...incoming };
+  const currentHardcover = currentSettings.hardcover || {};
+  const incomingHardcover = next.hardcover;
+
+  if (!incomingHardcover) {
+    return next;
+  }
+
+  const hasExistingToken = Boolean(`${currentHardcover.token || ""}`.trim());
+  const providedToken = `${incomingHardcover.token || ""}`.trim();
+  const shouldClearToken = incomingHardcover.clearToken === true;
+
+  next.hardcover = {
+    ...incomingHardcover,
+  };
+
+  if (shouldClearToken) {
+    next.hardcover.token = null;
+    return next;
+  }
+
+  if (!providedToken && hasExistingToken) {
+    next.hardcover.token = currentHardcover.token;
+  }
+
+  return next;
 }
 
 function createApp(services) {
@@ -51,11 +96,10 @@ function createApp(services) {
 
   app.post("/api/settings", async (req, res, next) => {
     try {
-      const settings = await services.settingsService.updateSettings(req.body || {});
-      return res.json({
-        ...(await buildSettingsPayload(services)),
-        settings,
-      });
+      const currentSettings = services.settingsService.getSettings();
+      const requestPayload = mergeSensitiveSettings(currentSettings, req.body || {});
+      await services.settingsService.updateSettings(requestPayload);
+      return res.json(await buildSettingsPayload(services));
     } catch (error) {
       return next(error);
     }
@@ -81,6 +125,7 @@ function createApp(services) {
     createApiRouter({
       prowlarrService: services.prowlarrService,
       qbittorrentService: services.qbittorrentService,
+      hardcoverService: services.hardcoverService,
       jobService: services.jobService,
       favoriteService: services.favoriteService,
       destinationShelves: services.destinationShelves,

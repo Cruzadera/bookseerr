@@ -18,6 +18,14 @@ export const DEFAULT_SETTINGS = Object.freeze({
     defaultShelf: null,
     rememberLastShelf: true,
   },
+  hardcover: {
+    enabled: false,
+    token: "",
+    hasToken: false,
+    providerPriority: ["hardcover", "indexer"],
+    autoFetchCovers: true,
+    onboardingDismissed: false,
+  },
 });
 
 function clone(value) {
@@ -90,6 +98,27 @@ function normalizeStringArray(value) {
   return [...new Set(value.map((item) => `${item || ""}`.trim()).filter(Boolean))];
 }
 
+function normalizeProviderPriority(value) {
+  const allowed = ["hardcover", "indexer"];
+  const normalized = normalizeStringArray(value)
+    .map((entry) => entry.toLowerCase())
+    .filter((entry) => allowed.includes(entry));
+
+  if (!normalized.length) {
+    return [...DEFAULT_SETTINGS.hardcover.providerPriority];
+  }
+
+  if (!normalized.includes("hardcover")) {
+    normalized.push("hardcover");
+  }
+
+  if (!normalized.includes("indexer")) {
+    normalized.push("indexer");
+  }
+
+  return normalized;
+}
+
 export function cloneSettings(value = DEFAULT_SETTINGS) {
   return clone(value);
 }
@@ -142,6 +171,20 @@ export function normalizeSettings(candidate = {}) {
         merged.calibre?.rememberLastShelf === undefined
           ? DEFAULT_SETTINGS.calibre.rememberLastShelf
           : Boolean(merged.calibre.rememberLastShelf),
+    },
+    hardcover: {
+      enabled: Boolean(merged.hardcover?.enabled),
+      token: `${merged.hardcover?.token || ""}`,
+      hasToken: Boolean(merged.hardcover?.hasToken),
+      providerPriority: normalizeProviderPriority(merged.hardcover?.providerPriority),
+      autoFetchCovers:
+        merged.hardcover?.autoFetchCovers === undefined
+          ? DEFAULT_SETTINGS.hardcover.autoFetchCovers
+          : Boolean(merged.hardcover.autoFetchCovers),
+      onboardingDismissed:
+        merged.hardcover?.onboardingDismissed === undefined
+          ? DEFAULT_SETTINGS.hardcover.onboardingDismissed
+          : Boolean(merged.hardcover.onboardingDismissed),
     },
   };
 }

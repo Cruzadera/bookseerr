@@ -10,6 +10,11 @@ class JobService {
     const job = {
       id: crypto.randomUUID(),
       title: payload.title,
+      author: payload.author || null,
+      coverUrl: payload.coverUrl || null,
+      series: payload.series || null,
+      publishYear: Number(payload.publishYear || 0) || null,
+      language: payload.language || null,
       downloadUrl: payload.downloadUrl,
       protocol: payload.protocol,
       category: payload.category || null,
@@ -37,6 +42,11 @@ class JobService {
     const job = {
       id: crypto.randomUUID(),
       title: payload.title || payload.fileName,
+      author: null,
+      coverUrl: null,
+      series: null,
+      publishYear: null,
+      language: null,
       downloadUrl: null,
       protocol: "local-file",
       destinationId: payload.destinationId || null,

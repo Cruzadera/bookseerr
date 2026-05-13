@@ -5,6 +5,7 @@ const DEFAULT_STATE = {
   jobs: [],
   processedFiles: {},
   favorites: [],
+  hardcoverCache: {},
 };
 
 class StateRepository {
@@ -127,6 +128,17 @@ class StateRepository {
     }
 
     return false;
+  }
+
+  getHardcoverCacheEntry(key) {
+    return this.state.hardcoverCache?.[key] || null;
+  }
+
+  async setHardcoverCacheEntry(key, payload) {
+    this.state.hardcoverCache = this.state.hardcoverCache || {};
+    this.state.hardcoverCache[key] = payload;
+    await this.persist();
+    return payload;
   }
 }
 

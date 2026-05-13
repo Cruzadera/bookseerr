@@ -5,6 +5,7 @@ import SettingsView from "./components/SettingsView";
 import Sidebar from "./components/Sidebar";
 import JobsView from "./components/JobsView";
 import FavoritesView from "./components/FavoritesView";
+import HardcoverOnboarding from "./components/HardcoverOnboarding";
 import { useI18n } from "./hooks/useI18n";
 import {
   cloneSettings,
@@ -155,11 +156,19 @@ export default function App() {
   const [selectedDestinationId, setSelectedDestinationId] = useState("");
   const [availableIndexers, setAvailableIndexers] = useState([]);
   const [settings, setSettings] = useState(cloneSettings(DEFAULT_SETTINGS));
+  const [hardcoverStatus, setHardcoverStatus] = useState({
+    code: "disabled",
+    message: "Hardcover integration is disabled",
+  });
+  const [hardcoverTokenDraft, setHardcoverTokenDraft] = useState("");
+  const [hardcoverClearToken, setHardcoverClearToken] = useState(false);
+  const [showHardcoverOnboarding, setShowHardcoverOnboarding] = useState(false);
   const [loading, setLoading] = useState({
     settings: true,
     search: false,
     request: false,
     download: false,
+    hardcover: false,
   });
   const [homeStatus, setHomeStatus] = useState({ message: "", error: false });
   const [settingsStatus, setSettingsStatus] = useState({ message: "", error: false });
@@ -253,6 +262,15 @@ export default function App() {
         const shelves = Array.isArray(data.destinationShelves) ? data.destinationShelves : [];
 
         setSettings(normalizedLoadedSettings);
+        setHardcoverStatus(data.hardcover?.status || {
+          code: "disabled",
+          message: "Hardcover integration is disabled",
+        });
+        setShowHardcoverOnboarding(
+          !normalizedLoadedSettings.hardcover?.enabled &&
+            !normalizedLoadedSettings.hardcover?.hasToken &&
+            !normalizedLoadedSettings.hardcover?.onboardingDismissed,
+        );
         setDestinationShelves(shelves);
         setDestinationShelfEnabled(Boolean(data.features?.destinationShelf) && shelves.length > 0);
         setAvailableIndexers(
@@ -386,6 +404,8 @@ export default function App() {
           sizeMB: item.sizeMB,
           seeders: item.seeders,
           publishDate: item.publishDate,
+          publishYear: item.publishYear,
+          series: item.series,
           indexer: item.indexer,
           language: item.language,
           coverUrl: item.coverUrl,
@@ -468,6 +488,11 @@ export default function App() {
         },
         body: JSON.stringify({
           title: item.title,
+          author: item.author || null,
+          coverUrl: item.coverUrl || null,
+          series: item.series || null,
+          publishYear: item.publishYear || null,
+          language: item.language || null,
           downloadUrl: item.downloadUrl,
           protocol: item.protocol || "torrent",
           destinationId: selectedDestinationId || "",
@@ -659,15 +684,26 @@ export default function App() {
     }
   }
 
-  async function saveSettings() {
+  async function saveSettings(nextSettingsInput = null) {
     try {
-      const normalizedCurrentSettings = normalizeSettings(settings);
+      const normalizedCurrentSettings = normalizeSettings(nextSettingsInput || settings);
+      const payload = {
+        ...normalizedCurrentSettings,
+        hardcover: {
+          ...normalizedCurrentSettings.hardcover,
+        },
+      };
+
+      if (hardcoverClearToken) {
+        payload.hardcover.clearToken = true;
+      }
+
       const response = await fetch("/api/settings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(normalizedCurrentSettings),
+        body: JSON.stringify(payload),
       });
 
       const data = await handleJsonResponse(response);
@@ -675,6 +711,9 @@ export default function App() {
       const shelves = Array.isArray(data.destinationShelves) ? data.destinationShelves : [];
 
       setSettings(nextSettings);
+      setHardcoverStatus(data.hardcover?.status || hardcoverStatus);
+      setHardcoverClearToken(false);
+      setHardcoverTokenDraft("");
       setDestinationShelves(shelves);
       setDestinationShelfEnabled(Boolean(data.features?.destinationShelf) && shelves.length > 0);
       setAvailableIndexers(
@@ -685,6 +724,87 @@ export default function App() {
     } catch (error) {
       setSettingsStatus({ message: error.message, error: true });
     }
+  }
+
+  async function validateHardcoverToken(tokenOverride = "") {
+    setLoading((current) => ({ ...current, hardcover: true }));
+
+    try {
+      const response = await fetch("/api/hardcover/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token: tokenOverride || settings.hardcover.token || "" }),
+      });
+
+      const data = await handleJsonResponse(response);
+      setHardcoverStatus({
+        code: data.code || "connected",
+        message: data.message || t("ui.settings.hardcoverConnected"),
+      });
+      setSettingsStatus({ message: data.message || t("ui.settings.hardcoverConnected"), error: false });
+      return true;
+    } catch (error) {
+      setHardcoverStatus({
+        code: "invalid-token",
+        message: error.message || t("ui.settings.hardcoverInvalidToken"),
+      });
+      setSettingsStatus({
+        message: error.message || t("ui.settings.hardcoverInvalidToken"),
+        error: true,
+      });
+      return false;
+    } finally {
+      setLoading((current) => ({ ...current, hardcover: false }));
+    }
+  }
+
+  async function handleHardcoverOnboardingEnable() {
+    const token = `${hardcoverTokenDraft || ""}`.trim();
+
+    if (!token) {
+      setSettingsStatus({
+        message: t("ui.settings.hardcoverTokenRequired"),
+        error: true,
+      });
+      return;
+    }
+
+    const valid = await validateHardcoverToken(token);
+
+    if (!valid) {
+      return;
+    }
+
+    const nextSettings = normalizeSettings({
+      ...settings,
+      hardcover: {
+        ...settings.hardcover,
+        enabled: true,
+        token,
+        hasToken: true,
+        onboardingDismissed: true,
+      },
+    });
+
+    setSettings(nextSettings);
+    setShowHardcoverOnboarding(false);
+    await saveSettings(nextSettings);
+  }
+
+  async function handleHardcoverOnboardingSkip() {
+    const nextSettings = normalizeSettings({
+      ...settings,
+      hardcover: {
+        ...settings.hardcover,
+        onboardingDismissed: true,
+      },
+    });
+
+    setSettings(nextSettings);
+    setShowHardcoverOnboarding(false);
+    await saveSettings(nextSettings);
   }
 
   function resetSettings() {
@@ -751,6 +871,23 @@ export default function App() {
             </section>
           </section>
         </div>
+      </main>
+    );
+  }
+
+  if (showHardcoverOnboarding) {
+    return (
+      <main className="app-shell">
+        <HardcoverOnboarding
+          t={t}
+          token={hardcoverTokenDraft}
+          loading={loading.hardcover}
+          status={settingsStatus.message}
+          statusError={settingsStatus.error}
+          onTokenChange={setHardcoverTokenDraft}
+          onEnable={handleHardcoverOnboardingEnable}
+          onSkip={handleHardcoverOnboardingSkip}
+        />
       </main>
     );
   }
@@ -829,11 +966,26 @@ export default function App() {
             <SettingsView
               t={t}
               settings={settings}
+              hardcoverStatus={hardcoverStatus}
               availableIndexers={availableIndexers}
               destinationShelves={destinationShelves}
               onSettingsChange={(nextSettings) =>
                 setSettings(normalizeSettings(nextSettings))
               }
+              onValidateHardcover={() => validateHardcoverToken()}
+              onClearHardcoverToken={() => {
+                setHardcoverClearToken(true);
+                setSettings((current) =>
+                  normalizeSettings({
+                    ...current,
+                    hardcover: {
+                      ...current.hardcover,
+                      token: "",
+                      hasToken: false,
+                    },
+                  }),
+                );
+              }}
               onSave={saveSettings}
               onReset={resetSettings}
               status={settingsStatus.message}

@@ -25,6 +25,8 @@ class FavoriteService {
       id: crypto.randomUUID(),
       title: `${payload.title || ""}`.trim() || "Untitled",
       author: `${payload.author || ""}`.trim() || null,
+      series: `${payload.series || ""}`.trim() || null,
+      publishYear: Number(payload.publishYear || 0) || null,
       downloadUrl: payload.downloadUrl,
       protocol: payload.protocol || "torrent",
       format: payload.format || null,
