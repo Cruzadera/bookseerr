@@ -1,8 +1,10 @@
+import BookCover from "./BookCover";
+
 function formatSize(sizeMB) {
   const numeric = Number(sizeMB || 0);
 
   if (!Number.isFinite(numeric) || numeric <= 0) {
-    return "-";
+    return "—";
   }
 
   return `${numeric >= 10 ? numeric.toFixed(0) : numeric.toFixed(1)} MB`;
@@ -52,19 +54,8 @@ export default function FavoritesView({
               const year = formatPublishYear(item.publishDate);
 
               return (
-                <article key={item.id} className="result-card">
-                  <div className="result-cover">
-                    {item.coverUrl ? (
-                      <img src={item.coverUrl} alt={item.title || "Book"} loading="lazy" />
-                    ) : (
-                      <span className="result-cover-fallback" aria-hidden="true">
-                        {(item.title?.charAt(0) || "?").toUpperCase()}
-                      </span>
-                    )}
-                    <span className="result-cover-format">
-                      {`${item.format || "unknown"}`.toUpperCase()}
-                    </span>
-                  </div>
+                <article key={item.id} className="result-card favorites-result-card">
+                  <BookCover coverUrl={item.coverUrl} title={item.title} format={item.format} />
 
                   <div className="result-main">
                     <div className="result-head">
