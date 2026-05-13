@@ -3,9 +3,12 @@ const FORMAT_OPTIONS = ["epub", "mobi", "azw3", "pdf"];
 export default function SettingsView({
   t,
   settings,
+  hardcoverStatus,
   availableIndexers,
   destinationShelves,
   onSettingsChange,
+  onValidateHardcover,
+  onClearHardcoverToken,
   onSave,
   onReset,
   status,
@@ -20,6 +23,9 @@ export default function SettingsView({
       },
     });
   }
+
+  const hardcoverStatusCode = `${hardcoverStatus?.code || "disabled"}`;
+  const hardcoverStatusClass = `hardcover-status hardcover-status--${hardcoverStatusCode.replace(/[^a-z-]/gi, "-").toLowerCase()}`;
 
   function toggleExcludedFormat(format, checked) {
     const nextValues = new Set(settings.filters.excludedFormats);
@@ -165,6 +171,77 @@ export default function SettingsView({
             </section>
 
             <div className="settings-side-stack">
+              <section className="settings-group">
+                <h3>{t("ui.settings.hardcoverTitle") || "Hardcover metadata"}</h3>
+
+                <p className={hardcoverStatusClass}>
+                  <strong>{t("ui.settings.hardcoverStatus") || "Status"}:</strong>{" "}
+                  {hardcoverStatus?.message || t("ui.settings.hardcoverDisabled")}
+                </p>
+
+                <label className="toggle-field">
+                  <input
+                    type="checkbox"
+                    checked={settings.hardcover.enabled}
+                    onChange={(event) =>
+                      updateSection("hardcover", "enabled", event.target.checked)
+                    }
+                  />
+                  <span>{t("ui.settings.hardcoverEnabled") || "Enable Hardcover integration"}</span>
+                </label>
+
+                <label className="field">
+                  <span>{t("ui.settings.hardcoverToken") || "Hardcover API token"}</span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={settings.hardcover.token || ""}
+                    placeholder={settings.hardcover.hasToken ? "••••••••••••" : "hc_..."}
+                    onChange={(event) => {
+                      updateSection("hardcover", "token", event.target.value);
+                      updateSection("hardcover", "hasToken", Boolean(event.target.value.trim()) || settings.hardcover.hasToken);
+                    }}
+                  />
+                </label>
+
+                <label className="toggle-field">
+                  <input
+                    type="checkbox"
+                    checked={settings.hardcover.autoFetchCovers}
+                    onChange={(event) =>
+                      updateSection("hardcover", "autoFetchCovers", event.target.checked)
+                    }
+                  />
+                  <span>{t("ui.settings.hardcoverAutoFetchCovers") || "Auto-fetch cover images from Hardcover"}</span>
+                </label>
+
+                <label className="field">
+                  <span>{t("ui.settings.hardcoverProviderPriority") || "Metadata provider priority"}</span>
+                  <select
+                    value={(settings.hardcover.providerPriority || ["hardcover"])[0]}
+                    onChange={(event) => {
+                      const first = event.target.value === "indexer" ? "indexer" : "hardcover";
+                      const second = first === "hardcover" ? "indexer" : "hardcover";
+                      updateSection("hardcover", "providerPriority", [first, second]);
+                    }}
+                  >
+                    <option value="hardcover">{t("ui.settings.hardcoverFirst") || "Hardcover first"}</option>
+                    <option value="indexer">{t("ui.settings.indexerFirst") || "Indexer first"}</option>
+                  </select>
+                </label>
+
+                <div className="actions">
+                  <button type="button" className="secondary" onClick={onValidateHardcover}>
+                    {t("ui.settings.hardcoverValidate") || "Validate token"}
+                  </button>
+                  {settings.hardcover.hasToken ? (
+                    <button type="button" className="secondary" onClick={onClearHardcoverToken}>
+                      {t("ui.settings.hardcoverClearToken") || "Clear token"}
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+
               <section className="settings-group">
                 <h3>{t("ui.settings.downloadTitle")}</h3>
 

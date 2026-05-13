@@ -13,6 +13,7 @@ function clone(value) {
 function createApiRouter({
   prowlarrService,
   qbittorrentService,
+  hardcoverService,
   jobService,
   favoriteService,
   destinationShelves,
@@ -20,12 +21,28 @@ function createApiRouter({
 }) {
   const router = express.Router();
 
+  async function withTimeout(task, timeoutMs, fallbackValue) {
+    let timeoutId;
+
+    const timeoutPromise = new Promise((resolve) => {
+      timeoutId = setTimeout(() => resolve(fallbackValue), timeoutMs);
+    });
+
+    try {
+      const result = await Promise.race([task, timeoutPromise]);
+      return result;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   function getCurrentSettings() {
     return (
       settingsService?.getSettings?.() || {
         filters: {},
         download: {},
         calibre: {},
+        hardcover: {},
       }
     );
   }
@@ -84,6 +101,11 @@ function createApiRouter({
 
   async function startDownload({
     title,
+    author,
+    coverUrl,
+    series,
+    publishYear,
+    language,
     downloadUrl,
     protocol,
     category,
@@ -95,6 +117,11 @@ function createApiRouter({
 
     const job = await jobService.createDownloadJob({
       title,
+      author: author || null,
+      coverUrl: coverUrl || null,
+      series: series || null,
+      publishYear: Number(publishYear || 0) || null,
+      language: language || null,
       downloadUrl,
       protocol,
       category,
@@ -150,8 +177,22 @@ function createApiRouter({
       }
 
       const activeSettings = applySearchOverrides(getCurrentSettings(), req.query || {});
-      const results = await prowlarrService.search(query, activeSettings.filters);
+      const rawResults = await prowlarrService.search(query, activeSettings.filters);
+      const results = await withTimeout(
+        hardcoverService.enrichList(rawResults),
+        2500,
+        rawResults,
+      );
       return res.json({ query, count: results.length, results });
+    }),
+  );
+
+  router.post(
+    "/hardcover/validate",
+    asyncHandler(async (req, res) => {
+      const token = `${req.body?.token || ""}`.trim();
+      const result = await hardcoverService.validateToken(token);
+      return res.status(result.ok ? 200 : 400).json(result);
     }),
   );
 
@@ -160,6 +201,11 @@ function createApiRouter({
     asyncHandler(async (req, res) => {
       const {
         title,
+        author,
+        coverUrl,
+        series,
+        publishYear,
+        language,
         downloadUrl,
         protocol = "torrent",
         category,
@@ -175,6 +221,11 @@ function createApiRouter({
 
       const started = await startDownload({
         title,
+        author,
+        coverUrl,
+        series,
+        publishYear,
+        language,
         downloadUrl,
         protocol,
         category,
@@ -235,10 +286,15 @@ function createApiRouter({
         });
       }
 
-      const best = acceptable;
+      const [best] = await hardcoverService.enrichList([acceptable]);
 
       const started = await startDownload({
         title: best.title,
+        author: best.author,
+        coverUrl: best.coverUrl,
+        series: best.series,
+        publishYear: best.publishYear,
+        language: best.language,
         downloadUrl: best.downloadUrl,
         protocol: best.protocol || "torrent",
         category,
@@ -261,9 +317,18 @@ function createApiRouter({
     res.json({ jobs: jobService.listJobs() });
   });
 
-  router.get("/favorites", (req, res) => {
-    res.json({ favorites: favoriteService.listFavorites() });
-  });
+  router.get(
+    "/favorites",
+    asyncHandler(async (req, res) => {
+      const favorites = favoriteService.listFavorites();
+      const enriched = await withTimeout(
+        hardcoverService.enrichList(favorites),
+        1800,
+        favorites,
+      );
+      return res.json({ favorites: enriched });
+    }),
+  );
 
   router.post(
     "/favorites",
@@ -277,6 +342,8 @@ function createApiRouter({
         sizeMB,
         seeders,
         publishDate,
+        publishYear,
+        series,
         indexer,
         language,
         coverUrl,
@@ -295,6 +362,8 @@ function createApiRouter({
         sizeMB,
         seeders,
         publishDate,
+        publishYear,
+        series,
         indexer,
         language,
         coverUrl,
@@ -345,6 +414,11 @@ function createApiRouter({
 
       const started = await startDownload({
         title: sourceJob.title,
+        author: sourceJob.author || null,
+        coverUrl: sourceJob.coverUrl || null,
+        series: sourceJob.series || null,
+        publishYear: sourceJob.publishYear || null,
+        language: sourceJob.language || null,
         downloadUrl: sourceJob.downloadUrl,
         protocol: sourceJob.protocol || "torrent",
         category: sourceJob.category || undefined,

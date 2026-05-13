@@ -124,6 +124,32 @@
       "anyLanguage": "Any language",
       "spanish": "Spanish",
       "english": "English"
+      ,
+      "hardcoverTitle": "Hardcover metadata",
+      "hardcoverStatus": "Status",
+      "hardcoverDisabled": "Hardcover integration is disabled.",
+      "hardcoverEnabled": "Enable Hardcover integration",
+      "hardcoverToken": "Hardcover API token",
+      "hardcoverAutoFetchCovers": "Auto-fetch cover images from Hardcover",
+      "hardcoverProviderPriority": "Metadata provider priority",
+      "hardcoverFirst": "Hardcover first",
+      "indexerFirst": "Indexer first",
+      "hardcoverValidate": "Validate token",
+      "hardcoverClearToken": "Clear token",
+      "hardcoverConnected": "Connected to Hardcover.",
+      "hardcoverInvalidToken": "Hardcover token is invalid.",
+      "hardcoverTokenRequired": "Enter your Hardcover API token.",
+      "hardcoverConnecting": "Connecting..."
+    },
+    "hardcoverOnboarding": {
+      "kicker": "Optional setup",
+      "title": "Connect Hardcover for richer metadata",
+      "subtitle": "Upgrade covers, author names, and publication details with your Hardcover account.",
+      "description": "You can skip this now and enable it later from Settings.",
+      "enable": "Enable Hardcover",
+      "skip": "Skip for now",
+      "configuration": "To obtain your API Key, access this link:",
+      "configurationLinkText": "Get Hardcover API Key"
     },
     "status": {
       "searching": "Searching...",

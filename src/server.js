@@ -10,6 +10,7 @@ const JobService = require("./services/job.service");
 const FavoriteService = require("./services/favorite.service");
 const ProwlarrService = require("./services/prowlarr.service");
 const QBittorrentService = require("./services/qbittorrent.service");
+const HardcoverService = require("./services/hardcover.service");
 const { SettingsService } = require("./services/settings.service");
 const WatcherService = require("./services/watcher.service");
 
@@ -45,6 +46,14 @@ async function bootstrap() {
     },
     logger,
   });
+  const hardcoverService = new HardcoverService({
+    config: {
+      requestTimeoutMs: config.app.requestTimeoutMs,
+    },
+    logger,
+    settingsService,
+    stateRepository,
+  });
   const calibreWebService = new CalibreWebService({
     config: {
       ...config.calibreWeb,
@@ -75,6 +84,7 @@ async function bootstrap() {
     favoriteService,
     destinationShelves: config.destinationShelves,
     settingsService,
+    hardcoverService,
     uiConfig: {
       destinationShelves: config.destinationShelves,
     },
